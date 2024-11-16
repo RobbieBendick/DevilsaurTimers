@@ -1,0 +1,153 @@
+local _, addon = ...
+local DevilsaurTimers = LibStub("AceAddon-3.0"):GetAddon(addon.name)
+
+function DevilsaurTimers:CreateProgressBars()
+    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
+
+    local parentFrame = CreateFrame("Frame", "DevilsaurTimersParentFrame", UIParent)
+    parentFrame:SetSize(200, 150)
+    parentFrame:SetPoint("CENTER")
+
+    parentFrame:SetMovable(true)
+    parentFrame:EnableMouse(true)
+    parentFrame:RegisterForDrag("LeftButton")
+    parentFrame:SetScript("OnDragStart", parentFrame.StartMoving)
+    parentFrame:SetScript("OnDragStop", parentFrame.StopMovingOrSizing)
+
+    self.progressBars = {}
+
+    for i, color in ipairs(dinoColors) do
+        local progressBar = CreateFrame("StatusBar", "DevilsaurProgressBar" .. i, parentFrame)
+        progressBar:SetSize(200, 20)
+        local spacing = 25
+        progressBar:SetPoint("TOP", parentFrame, "TOP", 0, -(i - 1) * spacing)
+
+        progressBar:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
+        local r, g, b = self:GetColorByName("red")
+        progressBar:SetStatusBarColor(r, g, b)
+
+        local bg = progressBar:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0, 0, 0, 0.5)
+
+        local nameLabel = progressBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        nameLabel:SetPoint("RIGHT", progressBar, "RIGHT", -5, 0)
+        nameLabel:SetText(color)
+        nameLabel:SetTextColor(1, 1, 1)
+
+        local timerLabel = progressBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        timerLabel:SetPoint("LEFT", progressBar, "LEFT", 5, 0)
+        timerLabel:SetText("")
+        timerLabel:SetTextColor(1, 1, 1)
+
+        progressBar.timerLabel = timerLabel
+
+        local dinoIcon = progressBar:CreateTexture(nil, "OVERLAY")
+        dinoIcon:SetSize(20, 20)
+        dinoIcon:SetPoint("RIGHT", progressBar, "RIGHT", 20, 0)
+        dinoIcon:SetTexture("Interface\\Icons\\Ability_Hunter_Pet_Raptor")
+
+        progressBar.dinoIcon = dinoIcon
+
+        progressBar:SetScript("OnMouseDown", function(_, button)
+            if button == "LeftButton" then
+                self:StartTimer(progressBar)
+            elseif button == "RightButton" then
+                self:ResetTimer(progressBar)
+            end
+        end)
+
+        self.progressBars[i] = progressBar
+    end
+end
+
+function DevilsaurTimers:StartTimer(progressBar)
+    local duration = self.db.profile.respawnTimer - 1
+
+    progressBar:SetMinMaxValues(0, duration)
+    progressBar:SetValue(duration)
+
+    local originalColor = { progressBar:GetStatusBarColor() }
+
+    progressBar:SetStatusBarColor(1, 1, 0)
+
+    local minutes = math.floor(duration / 60)
+    local seconds = duration % 60
+    progressBar.timerLabel:SetText(string.format("%02d:%02d", minutes, seconds))
+
+    if progressBar.timerTicker then
+        progressBar.timerTicker:Cancel()
+    end
+
+    progressBar.timerTicker = C_Timer.NewTicker(1, function()
+        local currentValue = progressBar:GetValue()
+        if currentValue > 0 then
+            progressBar:SetValue(currentValue - 1)
+
+            local minutes = math.floor(currentValue / 60)
+            local seconds = currentValue % 60
+            progressBar.timerLabel:SetText(string.format("%02d:%02d", minutes, seconds))
+        else
+            self:ResetTimer(progressBar)
+        end
+    end)
+end
+
+function DevilsaurTimers:ResetTimer(progressBar)
+    if progressBar.timerTicker then
+        progressBar.timerTicker:Cancel()
+        progressBar.timerTicker = nil
+    end
+
+    progressBar:SetMinMaxValues(0, 1)
+    progressBar:SetValue(1)
+    progressBar.timerLabel:SetText("")
+
+    local r, g, b = self:GetColorByName("red")
+    progressBar:SetStatusBarColor(r, g, b)
+end
+
+function DevilsaurTimers:GetColorByName(colorName)
+    local colors = {
+        blue = {0, 0.5, 1},
+        pink = {1, 0.5, 0.75},
+        teal = {0, 1, 1},
+        green = {0, 1, 0},
+        yellow = {1, 1, 0},
+        red = {1, 0, 0},
+    }
+    return unpack(colors[colorName] or {1, 1, 1})
+end
+
+local defaults = {
+    profile = {
+        hide = false,
+        respawnTimer = 25 * 60,
+    }
+}
+
+function DevilsaurTimers:Toggle()
+    if Settings and Settings.OpenToCategory then
+        Settings.OpenToCategory(addon.name);
+    else
+        InterfaceOptionsFrame_OpenToCategory(addon.name);
+        InterfaceOptionsFrame_OpenToCategory(addon.name);
+    end
+end
+
+function DevilsaurTimers:LoadSlashCommand()
+    SLASH_DEVILSAURTIMERS1 = "/dt"
+    SLASH_DEVILSAURTIMERS2 = "/devilsaur"
+    SLASH_DEVILSAURTIMERS3 = "/devilsaurtimers"
+    SlashCmdList["DEVILSAURTIMERS"] = function(msg)
+        self:Toggle()
+    end
+end
+
+function DevilsaurTimers:OnInitialize()
+	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
+
+    self:LoadSlashCommand()
+    self:CreateMenu()
+    self:CreateProgressBars()
+end
