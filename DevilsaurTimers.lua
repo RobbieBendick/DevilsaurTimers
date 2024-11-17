@@ -12,7 +12,11 @@ function DevilsaurTimers:CreateProgressBars()
     parentFrame:EnableMouse(true)
     parentFrame:RegisterForDrag("LeftButton")
     parentFrame:SetScript("OnDragStart", parentFrame.StartMoving)
-    parentFrame:SetScript("OnDragStop", parentFrame.StopMovingOrSizing)
+    parentFrame:SetScript("OnDragStop", function (self)
+        self:StopMovingOrSizing()
+        local point, relativeFrame, relativePoint, x, y = self:GetPoint()
+        DevilsaurTimers.db.profile.parentFramePosition = {point, relativeFrame and relativeFrame:GetName() or nil, relativePoint, x, y}
+    end)
 
     self.progressBars = {}
 
@@ -66,9 +70,6 @@ function DevilsaurTimers:StartTimer(progressBar)
 
     progressBar:SetMinMaxValues(0, duration)
     progressBar:SetValue(duration)
-
-    local originalColor = { progressBar:GetStatusBarColor() }
-
     progressBar:SetStatusBarColor(1, 1, 0)
 
     local minutes = math.floor(duration / 60)
@@ -119,30 +120,43 @@ function DevilsaurTimers:GetColorByName(colorName)
     return unpack(colors[colorName] or {1, 1, 1})
 end
 
-local defaults = {
-    profile = {
-        hide = false,
-        respawnTimer = 25 * 60,
-    }
-}
-
 function DevilsaurTimers:Toggle()
     if Settings and Settings.OpenToCategory then
-        Settings.OpenToCategory(addon.name);
+        Settings.OpenToCategory(addon.name)
     else
-        InterfaceOptionsFrame_OpenToCategory(addon.name);
-        InterfaceOptionsFrame_OpenToCategory(addon.name);
+        InterfaceOptionsFrame_OpenToCategory(addon.name)
+        InterfaceOptionsFrame_OpenToCategory(addon.name)
     end
 end
 
 function DevilsaurTimers:LoadSlashCommand()
     SLASH_DEVILSAURTIMERS1 = "/dt"
     SLASH_DEVILSAURTIMERS2 = "/devilsaur"
-    SLASH_DEVILSAURTIMERS3 = "/devilsaurtimers"
+    SLASH_DEVILSAURTIMERS3 = "/devilsaurtimer"
+    SLASH_DEVILSAURTIMERS4 = "/devilsaurtimers"
     SlashCmdList["DEVILSAURTIMERS"] = function(msg)
         self:Toggle()
     end
 end
+
+function DevilsaurTimers:RestorePosition()
+    local frame = _G["DevilsaurTimersParentFrame"]
+    if not frame then return end
+    if #self.db.profile.parentFramePosition == 0 then return end
+    
+    C_Timer.After(0.25, function()
+        frame:ClearAllPoints()
+        frame:SetPoint(unpack(self.db.profile.parentFramePosition))
+    end)
+end
+
+local defaults = {
+    profile = {
+        hide = false,
+        respawnTimer = 25 * 60,
+        parentFramePosition = {},
+    }
+}
 
 function DevilsaurTimers:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
@@ -150,4 +164,5 @@ function DevilsaurTimers:OnInitialize()
     self:LoadSlashCommand()
     self:CreateMenu()
     self:CreateProgressBars()
+    self:RestorePosition()
 end
