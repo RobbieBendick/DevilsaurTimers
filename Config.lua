@@ -68,5 +68,5 @@ function DevilsaurTimers:UpdateVisibility()
     local parentFrame = _G["DevilsaurTimersParentFrame"]
     if not parentFrame then return end
 
-    parentFrame:SetShown(not parentFrame:IsShown())
+    parentFrame:SetShown(not self.db.profile.hide)
 end

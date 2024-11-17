@@ -12,7 +12,7 @@ function DevilsaurTimers:CreateProgressBars()
     parentFrame:EnableMouse(true)
     parentFrame:RegisterForDrag("LeftButton")
     parentFrame:SetScript("OnDragStart", parentFrame.StartMoving)
-    parentFrame:SetScript("OnDragStop", function (self)
+    parentFrame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local point, relativeFrame, relativePoint, x, y = self:GetPoint()
         DevilsaurTimers.db.profile.parentFramePosition = {point, relativeFrame and relativeFrame:GetName() or nil, relativePoint, x, y}
