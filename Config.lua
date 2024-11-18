@@ -45,6 +45,17 @@ function DevilsaurTimers:CreateMenu()
                             self.db.profile.hideLines = value
                             self:ToggleShowLines()
                         end,
+                    },
+                    hideMapTimers = {
+                        order = 3,
+                        type = "toggle",
+                        name = "Hide Map Timers",
+                        desc = "Hide the timer counting down on each devilsaur path.",
+						get = function(info) return self.db.profile.hideMapTimers end,
+						set = function(info, value)
+                            self.db.profile.hideMapTimers = value
+                            self:ToggleMapTimerTexts()
+                        end,
                     }
                 }
             },
@@ -97,18 +108,6 @@ function DevilsaurTimers:UpdateVisibility()
     parentFrame:SetShown(not self.db.profile.hideBars)
 end
 
-function DevilsaurTimers:GetColorByName(colorName)
-    local colors = {
-        blue = {0, 0.5, 1},
-        pink = {1, 0.5, 0.75},
-        teal = {0, 1, 1},
-        green = {0, 1, 0},
-        yellow = {1, 1, 0},
-        red = {1, 0, 0},
-    }
-    return unpack(colors[colorName] or {1, 1, 1})
-end
-
 function DevilsaurTimers:ToggleShowLines()
     local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
     if self.db.profile.hideLines then
@@ -122,6 +121,18 @@ function DevilsaurTimers:ToggleShowLines()
         self:DrawPatrolPaths()
         if mapOverlayFrame then
             mapOverlayFrame:Show()
+        end
+    end
+end
+
+function DevilsaurTimers:ToggleMapTimerTexts()
+    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
+    local action = self.db.profile.hideMapTimers and "Hide" or "Show"
+
+    for _, color in ipairs(dinoColors) do
+        local frame = _G[color.."TimerText"]
+        if frame and frame[action] then
+            frame[action](frame)
         end
     end
 end

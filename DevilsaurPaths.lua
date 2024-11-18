@@ -93,3 +93,15 @@ function DevilsaurTimers:ClearPatrolPaths()
         self.patrolLines = {}
     end
 end
+
+function DevilsaurTimers:GetColorByName(colorName)
+    local colors = {
+        blue = {0, 0.5, 1},
+        pink = {1, 0.5, 0.75},
+        teal = {0, 1, 1},
+        green = {0, 1, 0},
+        yellow = {1, 1, 0},
+        red = {1, 0, 0},
+    }
+    return unpack(colors[colorName] or {1, 1, 1})
+end
