@@ -25,8 +25,9 @@ function DevilsaurTimers:CreateMenu()
 				inline = true,
 				args = {
                     hideBars = {
+                        order = 1,
                         type = "toggle",
-                        name = "Hide Devilsaur Bars",
+                        name = "Hide Progress Bars",
                         desc = "Enable or disable the devilsaur progress bars.",
 						get = function(info) return self.db.profile.hideBars end,
 						set = function(info, value)
@@ -35,14 +36,15 @@ function DevilsaurTimers:CreateMenu()
                          end,
                     },
                     hideLines = {
+                        order = 2,
                         type = "toggle",
-                        name = "Hide Devilsaur Path Lines",
+                        name = "Hide Path Lines",
                         desc = "Hide the color coded lines on the map to represent the devilsaur pathing.",
 						get = function(info) return self.db.profile.hideLines end,
 						set = function(info, value)
                             self.db.profile.hideLines = value
                             self:ToggleShowLines()
-                         end,
+                        end,
                     }
                 }
             },
