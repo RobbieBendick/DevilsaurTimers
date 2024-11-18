@@ -46,7 +46,7 @@ function DevilsaurTimers:DrawPatrolPaths()
         for i = 1, #path - 1 do
             local line = patrolLayer:CreateLine()
             line:SetColorTexture(self:GetColorByName(color))
-            line:SetThickness(4)
+            line:SetThickness(self.db.profile.lineThickness or 4)
 
             local x1, y1 = unpack(path[i])
             local x2, y2 = unpack(path[i + 1])

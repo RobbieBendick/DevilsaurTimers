@@ -193,6 +193,7 @@ local defaults = {
         respawnTimer = 25 * 60,
         parentFramePosition = {},
         hideLines = false,
+        lineThickness = 4,
     }
 }
 

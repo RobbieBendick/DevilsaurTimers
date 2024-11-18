@@ -53,6 +53,7 @@ function DevilsaurTimers:CreateMenu()
                 inline = true,
                 args = {
                     respawnTimer = {
+                        order = 1,
                         type = "range",
                         name = "Respawn Timer (Seconds)",
                         desc = "Set the respawn timer for devilsaurs in seconds (default is 1500 seconds, or 25 minutes).",
@@ -64,6 +65,19 @@ function DevilsaurTimers:CreateMenu()
                             self.db.profile.respawnTimer = value
                         end,
                     },
+                    lineThickness = {
+                        order = 2,
+                        type = "range",
+                        name = "Line Thickness",
+                        desc = "Set the line thickness for the devilsaur paths on the map.",
+                        min = 1,
+                        max = 8,
+                        step = 1,
+                        get = function(info) return self.db.profile.lineThickness or 4 end,
+                        set = function(info, value)
+                            self.db.profile.lineThickness = value
+                        end,
+                    }
                 },
             },
         }
