@@ -65,8 +65,8 @@ function DevilsaurTimers:DrawPatrolPaths()
 
         local firstPoint = path[1]
         if firstPoint then
-            local mapWidth = WorldMapFrame.ScrollContainer.Child:GetWidth()
-            local mapHeight = WorldMapFrame.ScrollContainer.Child:GetHeight()
+            local mapWidth = patrolLayer:GetWidth()
+            local mapHeight = patrolLayer:GetHeight()
 
             local x, y = firstPoint[1], firstPoint[2]
             local posX = x * mapWidth
