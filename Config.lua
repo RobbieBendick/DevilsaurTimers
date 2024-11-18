@@ -54,7 +54,7 @@ function DevilsaurTimers:CreateMenu()
                         get = function(info) return self.db.profile.hideMapTimers end,
                         set = function(info, value)
                             self.db.profile.hideMapTimers = value
-                            self:ToggleMapTimerTexts()
+                            self:UpdateMapTimerTexts()
                         end,
                     },
                 },
@@ -163,7 +163,7 @@ function DevilsaurTimers:ToggleShowLines()
     end
 end
 
-function DevilsaurTimers:ToggleMapTimerTexts()
+function DevilsaurTimers:UpdateMapTimerTexts()
     local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
     local action = self.db.profile.hideMapTimers and "Hide" or "Show"
 

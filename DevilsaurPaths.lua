@@ -25,15 +25,15 @@ DevilsaurTimers.patrolPaths = {
 local patrolLayer
 local timerText
 function DevilsaurTimers:DrawPatrolPaths()
-    local currentMapID = WorldMapFrame:GetMapID()
-    local ungoroMapID = 1449
-    
     self:ClearPatrolPaths()
     self:HideTimerTexts()
+
+    local currentMapID = WorldMapFrame:GetMapID()
+    local ungoroMapID = 1449
+ 
     if currentMapID ~= ungoroMapID then
         return
     end
-
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
 
@@ -84,6 +84,7 @@ function DevilsaurTimers:DrawPatrolPaths()
             timerText:SetTextColor(1, 1, 1)
         end
     end
+    self:UpdateMapTimerTexts()
 end
 
 function DevilsaurTimers:ClearPatrolPaths()
