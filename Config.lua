@@ -108,7 +108,7 @@ function DevilsaurTimers:GetColorByName(colorName)
 end
 
 function DevilsaurTimers:ToggleShowLines()
-    local mapOverlayFrame = _G["DevilsaurPatrolLayer"]
+    local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
     if self.db.profile.hideLines then
         self:UnloadHooks()
         self:ClearPatrolPaths()

@@ -36,15 +36,15 @@ function DevilsaurTimers:DrawPatrolPaths()
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
 
-    local patrolLayer = _G["DevilsaurPatrolLayer"] or CreateFrame("Frame", "DevilsaurPatrolLayer", WorldMapFrame.ScrollContainer)
-    patrolLayer:ClearAllPoints()
-    patrolLayer:SetAllPoints(WorldMapFrame.ScrollContainer.Child)
-    patrolLayer:SetFrameStrata("HIGH")
-    patrolLayer:SetToplevel(true)
+    local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"] or CreateFrame("Frame", "DevilsaurMapOverlayFrame", WorldMapFrame.ScrollContainer)
+    mapOverlayFrame:ClearAllPoints()
+    mapOverlayFrame:SetAllPoints(WorldMapFrame.ScrollContainer.Child)
+    mapOverlayFrame:SetFrameStrata("HIGH")
+    mapOverlayFrame:SetToplevel(true)
     
     for color, path in pairs(self.patrolPaths) do
         for i = 1, #path - 1 do
-            local line = patrolLayer:CreateLine()
+            local line = mapOverlayFrame:CreateLine()
             line:SetColorTexture(self:GetColorByName(color))
             line:SetThickness(self.db.profile.lineThickness or 4)
 
@@ -52,21 +52,21 @@ function DevilsaurTimers:DrawPatrolPaths()
             local x2, y2 = unpack(path[i + 1])
 
             -- convert normalized map coordinates (0 to 1 range) to pixel positions
-            local startX = x1 * patrolLayer:GetWidth()
-            local startY = -y1 * patrolLayer:GetHeight()
-            local endX = x2 * patrolLayer:GetWidth()
-            local endY = -y2 * patrolLayer:GetHeight()
+            local startX = x1 * mapOverlayFrame:GetWidth()
+            local startY = -y1 * mapOverlayFrame:GetHeight()
+            local endX = x2 * mapOverlayFrame:GetWidth()
+            local endY = -y2 * mapOverlayFrame:GetHeight()
 
-            line:SetStartPoint("TOPLEFT", patrolLayer, startX, startY)
-            line:SetEndPoint("TOPLEFT", patrolLayer, endX, endY)
+            line:SetStartPoint("TOPLEFT", mapOverlayFrame, startX, startY)
+            line:SetEndPoint("TOPLEFT", mapOverlayFrame, endX, endY)
 
             table.insert(self.patrolLines, line)
         end
 
         local firstPoint = path[1]
         if firstPoint then
-            local mapWidth = patrolLayer:GetWidth()
-            local mapHeight = patrolLayer:GetHeight()
+            local mapWidth = mapOverlayFrame:GetWidth()
+            local mapHeight = mapOverlayFrame:GetHeight()
 
             local x, y = firstPoint[1], firstPoint[2]
             local posX = x * mapWidth
@@ -75,11 +75,11 @@ function DevilsaurTimers:DrawPatrolPaths()
             local timerText = self.timerTexts[color]
 
             if not timerText then
-                timerText = patrolLayer:CreateFontString(color.."TimerText", "OVERLAY", "GameFontNormalSmall")
+                timerText = mapOverlayFrame:CreateFontString(color.."TimerText", "OVERLAY", "GameFontNormalSmall")
                 self.timerTexts[color] = timerText
             end
 
-            timerText:SetPoint("CENTER", patrolLayer, "TOPLEFT", posX, posY)
+            timerText:SetPoint("CENTER", mapOverlayFrame, "TOPLEFT", posX, posY)
             timerText:SetTextColor(1, 1, 1)
         end
     end

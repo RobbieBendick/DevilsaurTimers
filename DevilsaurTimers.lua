@@ -152,28 +152,28 @@ end
 function DevilsaurTimers:LoadHooks()
     hooksecurefunc(WorldMapFrame, "OnShow", function()
         self:DrawPatrolPaths()
-        local frame = _G["DevilsaurPatrolLayer"]
+        local frame = _G["DevilsaurMapOverlayFrame"]
         if frame then
             frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
         end
     end)
     hooksecurefunc(WorldMapFrame, "OnMapChanged", function()
         self:DrawPatrolPaths()
-        local frame = _G["DevilsaurPatrolLayer"]
+        local frame = _G["DevilsaurMapOverlayFrame"]
         if frame then
             frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
         end
     end)
     hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Maximize", function()
         self:DrawPatrolPaths()
-        local frame = _G["DevilsaurPatrolLayer"]
+        local frame = _G["DevilsaurMapOverlayFrame"]
         if frame then
             frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
         end
     end)
     hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Minimize", function()
         self:DrawPatrolPaths()
-        local frame = _G["DevilsaurPatrolLayer"]
+        local frame = _G["DevilsaurMapOverlayFrame"]
         if frame then
             frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
         end
