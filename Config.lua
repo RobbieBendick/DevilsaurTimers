@@ -24,14 +24,24 @@ function DevilsaurTimers:CreateMenu()
 				order = 2,
 				inline = true,
 				args = {
-                    hide = {
+                    hideBars = {
                         type = "toggle",
                         name = "Hide Devilsaur Bars",
                         desc = "Enable or disable the devilsaur progress bars.",
-						get = function(info) return self.db.profile.hide end,
+						get = function(info) return self.db.profile.hideBars end,
 						set = function(info, value)
-                            self.db.profile.hide = value
+                            self.db.profile.hideBars = value
                             self:UpdateVisibility()
+                         end,
+                    },
+                    hideLines = {
+                        type = "toggle",
+                        name = "Hide Devilsaur Path Lines",
+                        desc = "Hide the color coded lines on the map to represent the devilsaur pathing.",
+						get = function(info) return self.db.profile.hideLines end,
+						set = function(info, value)
+                            self.db.profile.hideLines = value
+                            self:ToggleShowLines()
                          end,
                     }
                 }
@@ -68,5 +78,34 @@ function DevilsaurTimers:UpdateVisibility()
     local parentFrame = _G["DevilsaurTimersParentFrame"]
     if not parentFrame then return end
 
-    parentFrame:SetShown(not self.db.profile.hide)
+    parentFrame:SetShown(not self.db.profile.hideBars)
+end
+
+function DevilsaurTimers:GetColorByName(colorName)
+    local colors = {
+        blue = {0, 0.5, 1},
+        pink = {1, 0.5, 0.75},
+        teal = {0, 1, 1},
+        green = {0, 1, 0},
+        yellow = {1, 1, 0},
+        red = {1, 0, 0},
+    }
+    return unpack(colors[colorName] or {1, 1, 1})
+end
+
+function DevilsaurTimers:ToggleShowLines()
+    local mapOverlayFrame = _G["DevilsaurPatrolLayer"]
+    if self.db.profile.hideLines then
+        self:UnloadHooks()
+        self:ClearPatrolPaths()
+        if mapOverlayFrame then
+            mapOverlayFrame:Hide()
+        end
+    else
+        self:LoadHooks()
+        self:DrawPatrolPaths()
+        if mapOverlayFrame then
+            mapOverlayFrame:Show()
+        end
+    end
 end

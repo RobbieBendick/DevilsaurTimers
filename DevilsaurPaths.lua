@@ -1,0 +1,95 @@
+local _, addon = ...
+local DevilsaurTimers = LibStub("AceAddon-3.0"):GetAddon(addon.name)
+DevilsaurTimers.patrolPaths = {
+    -- coords
+    blue = {
+        {0.5711, 0.24}, {0.588, 0.286}, {0.603, 0.274}, {0.644, 0.26}, {0.668, 0.253}, {0.689, 0.261}, {0.7023, 0.2921}, {0.675, 0.311}, {0.644, 0.304}, {0.642, 0.331}
+    },
+    pink = {
+        {0.73, 0.31}, {0.73, 0.35}, {0.74, 0.4}, {0.75, 0.44}, {0.75, 0.48}, {0.73, 0.50}, {0.71, 0.51}, {0.704, 0.554}, {0.688, 0.585}, {0.651, 0.593}, {0.628, 0.595}
+    },
+    red = {
+        {0.34, 0.221}, {0.3435, 0.2485}, {0.3478, 0.286}, {0.3662, 0.3453}, {0.35, 0.363}, {0.33, 0.37}, {0.3244, 0.4368}, {0.31, 0.475}, {0.3116, 0.5120}, {0.30, 0.5314}
+    },
+    teal = {
+        {0.5612, 0.32}, {0.5711, 0.357}, {0.58, 0.4050}, {0.5874, 0.4453}, {0.5683, 0.4655}, {0.5676, 0.5144}, {0.5683, 0.5559}, {0.5732, 0.6069}, {0.5591, 0.63},{0.5647, 0.6569}, {0.5864, 0.6984}, {0.5735, 0.7239}, {0.5789, 0.742}
+    },
+    yellow = {
+        {0.3116, 0.3453}, {0.32, 0.358}, {0.34, 0.3793}, {0.37, 0.424}, {0.39, 0.46}, {0.395, 0.496}, {0.4030, 0.54}, {0.40, 0.594}, {0.409, 0.608}, {0.423, 0.615},
+    },
+    green = {
+        {0.432, 0.796}, {0.44, 0.76}, {0.459, 0.74}, {0.451, 0.67}, {0.45, 0.64}, {0.467, 0.62}, {0.501, 0.605}, {0.528, 0.5888}, {0.545, 0.615}, {0.545, 0.645},{0.525, 0.68}, {0.527, 0.705},{0.5358, 0.7345}, 
+    },
+}
+
+local patrolLayer
+local timerText
+function DevilsaurTimers:DrawPatrolPaths()
+    local currentMapID = WorldMapFrame:GetMapID()
+    local ungoroMapID = 1449
+    
+    self:ClearPatrolPaths()
+    if currentMapID ~= ungoroMapID then
+        return
+    end
+
+    self.patrolLines = self.patrolLines or {}
+    self.timerTexts = self.timerTexts or {}
+
+    local patrolLayer = _G["DevilsaurPatrolLayer"] or CreateFrame("Frame", "DevilsaurPatrolLayer", WorldMapFrame.ScrollContainer)
+    patrolLayer:ClearAllPoints()
+    patrolLayer:SetAllPoints(WorldMapFrame.ScrollContainer.Child)
+    patrolLayer:SetFrameStrata("HIGH")
+    patrolLayer:SetToplevel(true)
+    
+    for color, path in pairs(self.patrolPaths) do
+        for i = 1, #path - 1 do
+            local line = patrolLayer:CreateLine()
+            line:SetColorTexture(self:GetColorByName(color))
+            line:SetThickness(4)
+
+            local x1, y1 = unpack(path[i])
+            local x2, y2 = unpack(path[i + 1])
+
+            -- convert normalized map coordinates (0 to 1 range) to pixel positions
+            local startX = x1 * patrolLayer:GetWidth()
+            local startY = -y1 * patrolLayer:GetHeight()
+            local endX = x2 * patrolLayer:GetWidth()
+            local endY = -y2 * patrolLayer:GetHeight()
+
+            line:SetStartPoint("TOPLEFT", patrolLayer, startX, startY)
+            line:SetEndPoint("TOPLEFT", patrolLayer, endX, endY)
+
+            table.insert(self.patrolLines, line)
+        end
+
+        local firstPoint = path[1]
+        if firstPoint then
+            local mapWidth = WorldMapFrame.ScrollContainer.Child:GetWidth()
+            local mapHeight = WorldMapFrame.ScrollContainer.Child:GetHeight()
+
+            local x, y = firstPoint[1], firstPoint[2]
+            local posX = x * mapWidth
+            local posY = -y * mapHeight
+
+            local timerText = self.timerTexts[color]
+
+            if not timerText then
+                timerText = patrolLayer:CreateFontString(color.."TimerText", "OVERLAY", "GameFontNormalSmall")
+                self.timerTexts[color] = timerText
+            end
+
+            timerText:SetPoint("CENTER", patrolLayer, "TOPLEFT", posX, posY)
+            timerText:SetTextColor(1, 1, 1)
+        end
+    end
+end
+
+function DevilsaurTimers:ClearPatrolPaths()
+    if self.patrolLines then
+        for _, line in ipairs(self.patrolLines) do
+            line:Hide()
+        end
+        self.patrolLines = {}
+    end
+end

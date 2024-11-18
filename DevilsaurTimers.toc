@@ -9,4 +9,5 @@
 embeds.xml
 
 Config.lua
+DevilsaurPaths.lua
 DevilsaurTimers.lua

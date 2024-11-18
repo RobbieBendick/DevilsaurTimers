@@ -38,6 +38,7 @@ function DevilsaurTimers:CreateProgressBars()
         nameLabel:SetPoint("RIGHT", progressBar, "RIGHT", -5, 0)
         nameLabel:SetText(color)
         nameLabel:SetTextColor(1, 1, 1)
+        progressBar.color = color
 
         local timerLabel = progressBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         timerLabel:SetPoint("LEFT", progressBar, "LEFT", 5, 0)
@@ -61,7 +62,7 @@ function DevilsaurTimers:CreateProgressBars()
             end
         end)
 
-        self.progressBars[i] = progressBar
+        self.progressBars[color] = progressBar
     end
 end
 
@@ -88,6 +89,12 @@ function DevilsaurTimers:StartTimer(progressBar)
             local minutes = math.floor(currentValue / 60)
             local seconds = currentValue % 60
             progressBar.timerLabel:SetText(string.format("%02d:%02d", minutes, seconds))
+            progressBar.timer = currentValue
+
+            -- update minimap text
+            if self.timerTexts[progressBar.color] then
+                self.timerTexts[progressBar.color]:SetText(string.format("%02d:%02d", minutes, seconds))
+            end
         else
             self:ResetTimer(progressBar)
         end
@@ -106,18 +113,10 @@ function DevilsaurTimers:ResetTimer(progressBar)
 
     local r, g, b = self:GetColorByName("red")
     progressBar:SetStatusBarColor(r, g, b)
-end
 
-function DevilsaurTimers:GetColorByName(colorName)
-    local colors = {
-        blue = {0, 0.5, 1},
-        pink = {1, 0.5, 0.75},
-        teal = {0, 1, 1},
-        green = {0, 1, 0},
-        yellow = {1, 1, 0},
-        red = {1, 0, 0},
-    }
-    return unpack(colors[colorName] or {1, 1, 1})
+    if self.timerTexts[progressBar.color] then
+        self.timerTexts[progressBar.color]:SetText("")
+    end
 end
 
 function DevilsaurTimers:Toggle()
@@ -150,17 +149,57 @@ function DevilsaurTimers:RestorePosition()
     end)
 end
 
+function DevilsaurTimers:LoadHooks()
+    hooksecurefunc(WorldMapFrame, "OnShow", function()
+        self:DrawPatrolPaths()
+        local frame = _G["DevilsaurPatrolLayer"]
+        if frame then
+            frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
+        end
+    end)
+    hooksecurefunc(WorldMapFrame, "OnMapChanged", function()
+        self:DrawPatrolPaths()
+        local frame = _G["DevilsaurPatrolLayer"]
+        if frame then
+            frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
+        end
+    end)
+    hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Maximize", function()
+        self:DrawPatrolPaths()
+        local frame = _G["DevilsaurPatrolLayer"]
+        if frame then
+            frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
+        end
+    end)
+    hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Minimize", function()
+        self:DrawPatrolPaths()
+        local frame = _G["DevilsaurPatrolLayer"]
+        if frame then
+            frame:SetSize(WorldMapFrame.ScrollContainer:GetSize())
+        end
+    end)
+end
+
+function DevilsaurTimers:UnloadHooks()
+    hooksecurefunc(WorldMapFrame, "OnShow", function() end)
+    hooksecurefunc(WorldMapFrame, "OnMapChanged", function() end)
+    hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Maximize", function() end)
+    hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Minimize", function() end)
+end
+
 local defaults = {
     profile = {
-        hide = false,
+        hideBars = false,
         respawnTimer = 25 * 60,
         parentFramePosition = {},
+        hideLines = false,
     }
 }
 
 function DevilsaurTimers:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
 
+    self:LoadHooks()
     self:LoadSlashCommand()
     self:CreateMenu()
     self:CreateProgressBars()
