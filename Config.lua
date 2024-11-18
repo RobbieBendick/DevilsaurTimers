@@ -10,38 +10,38 @@ function DevilsaurTimers:CreateMenu()
     local version = GetAddOnMetadata(self.name, "Version") or "Unknown"
 	local author = GetAddOnMetadata(self.name, "Author") or "Mageiden"
     local options = {
-		type = "group",
-		name = self.name,
-		args = {
-			info = {
-				order = 1,
-				type = "description",
-				name = "|cffffd700Version|r " .. version .. "\n|cffffd700 Author|r " .. author,
-			},
-			visibility = {
-				type = "group",
-				name = "Visibility Settings",
-				order = 2,
-				inline = true,
-				args = {
+        type = "group",
+        name = self.name,
+        args = {
+            info = {
+                order = 1,
+                type = "description",
+                name = "|cffffd700Version|r " .. version .. "\n|cffffd700Author|r " .. author,
+            },
+            visibility = {
+                type = "group",
+                name = "Visibility Settings",
+                order = 2,
+                inline = true,
+                args = {
                     hideBars = {
                         order = 1,
                         type = "toggle",
                         name = "Hide Progress Bars",
                         desc = "Enable or disable the devilsaur progress bars.",
-						get = function(info) return self.db.profile.hideBars end,
-						set = function(info, value)
+                        get = function(info) return self.db.profile.hideBars end,
+                        set = function(info, value)
                             self.db.profile.hideBars = value
                             self:UpdateVisibility()
-                         end,
+                        end,
                     },
                     hideLines = {
                         order = 2,
                         type = "toggle",
                         name = "Hide Path Lines",
-                        desc = "Hide the color coded lines on the map to represent the devilsaur pathing.",
-						get = function(info) return self.db.profile.hideLines end,
-						set = function(info, value)
+                        desc = "Hide the color-coded lines on the map to represent the devilsaur pathing.",
+                        get = function(info) return self.db.profile.hideLines end,
+                        set = function(info, value)
                             self.db.profile.hideLines = value
                             self:ToggleShowLines()
                         end,
@@ -51,17 +51,17 @@ function DevilsaurTimers:CreateMenu()
                         type = "toggle",
                         name = "Hide Map Timers",
                         desc = "Hide the timer counting down on each devilsaur path.",
-						get = function(info) return self.db.profile.hideMapTimers end,
-						set = function(info, value)
+                        get = function(info) return self.db.profile.hideMapTimers end,
+                        set = function(info, value)
                             self.db.profile.hideMapTimers = value
                             self:ToggleMapTimerTexts()
                         end,
-                    }
-                }
+                    },
+                },
             },
             settings = {
                 type = "group",
-                name = "Settings",
+                name = "General Settings",
                 order = 3,
                 inline = true,
                 args = {
@@ -90,10 +90,46 @@ function DevilsaurTimers:CreateMenu()
                         set = function(info, value)
                             self.db.profile.lineThickness = value
                         end,
-                    }
+                    },
                 },
             },
-        }
+            mapTimerSettings = {
+                type = "group",
+                name = "Map Timer Settings",
+                order = 4,
+                inline = true,
+                args = {
+                    timerXOffset = {
+                        order = 1,
+                        type = "range",
+                        name = "Timer Text X Offset",
+                        desc = "Adjust the X offset for the map respawn timer next to each devilsaur path.",
+                        min = -40,
+                        max = 40,
+                        step = 1,
+                        get = function(info) return self.db.profile.mapTimerTextOffset.x or 0 end,
+                        set = function(info, value)
+                            self.db.profile.mapTimerTextOffset.x = value
+                            self:DrawPatrolPaths()
+                        end,
+                    },
+                    timerYOffset = {
+                        order = 2,
+                        type = "range",
+                        name = "Timer Text Y Offset",
+                        desc = "Adjust the Y offset for the map respawn timer next to each devilsaur path.",
+                        min = -40,
+                        max = 40,
+                        step = 1,
+                        get = function(info) return self.db.profile.mapTimerTextOffset.y or 0 end,
+                        set = function(info, value)
+                            self.db.profile.mapTimerTextOffset.y = value
+                            self:DrawPatrolPaths()
+                        end,
+                    },
+                },
+            },
+        },
     }
 
     LibStub("AceConfig-3.0"):RegisterOptionsTable(self.name, options)
@@ -113,12 +149,14 @@ function DevilsaurTimers:ToggleShowLines()
     if self.db.profile.hideLines then
         self:UnloadHooks()
         self:ClearPatrolPaths()
+        self:HideTimerTexts()
         if mapOverlayFrame then
             mapOverlayFrame:Hide()
         end
     else
         self:LoadHooks()
         self:DrawPatrolPaths()
+        self:ShowTimerTexts()
         if mapOverlayFrame then
             mapOverlayFrame:Show()
         end

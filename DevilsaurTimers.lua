@@ -190,11 +190,15 @@ end
 local defaults = {
     profile = {
         hideBars = false,
-        respawnTimer = 25 * 60,
-        parentFramePosition = {},
         hideLines = false,
         hideMapTimers = false,
+        respawnTimer = 25 * 60,
+        parentFramePosition = {},
         lineThickness = 4,
+        mapTimerTextOffset = {
+            x = 0,
+            y = 0
+        }
     }
 }
 

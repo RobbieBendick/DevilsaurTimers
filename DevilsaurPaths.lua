@@ -29,6 +29,7 @@ function DevilsaurTimers:DrawPatrolPaths()
     local ungoroMapID = 1449
     
     self:ClearPatrolPaths()
+    self:HideTimerTexts()
     if currentMapID ~= ungoroMapID then
         return
     end
@@ -69,8 +70,8 @@ function DevilsaurTimers:DrawPatrolPaths()
             local mapHeight = mapOverlayFrame:GetHeight()
 
             local x, y = firstPoint[1], firstPoint[2]
-            local posX = x * mapWidth
-            local posY = -y * mapHeight
+            local posX = x * mapWidth + self.db.profile.mapTimerTextOffset.x
+            local posY = -y * mapHeight - self.db.profile.mapTimerTextOffset.y
 
             local timerText = self.timerTexts[color]
 
@@ -91,6 +92,28 @@ function DevilsaurTimers:ClearPatrolPaths()
             line:Hide()
         end
         self.patrolLines = {}
+    end
+end
+
+function DevilsaurTimers:HideTimerTexts()
+    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
+
+    for _, color in ipairs(dinoColors) do
+        local frame = _G[color.."TimerText"]
+        if frame then
+            frame:Hide()
+        end
+    end
+end
+
+function DevilsaurTimers:ShowTimerTexts()
+    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
+
+    for _, color in ipairs(dinoColors) do
+        local frame = _G[color.."TimerText"]
+        if frame then
+            frame:Show()
+        end
     end
 end
 
