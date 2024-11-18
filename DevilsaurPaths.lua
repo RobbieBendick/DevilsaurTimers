@@ -85,6 +85,7 @@ function DevilsaurTimers:DrawPatrolPaths()
         end
     end
     self:UpdateMapTimerTexts()
+    self:UpdatePatrolPathVisibility()
 end
 
 function DevilsaurTimers:ClearPatrolPaths()
@@ -93,6 +94,30 @@ function DevilsaurTimers:ClearPatrolPaths()
             line:Hide()
         end
         self.patrolLines = {}
+    end
+end
+
+function DevilsaurTimers:HidePatrolPaths()
+    if self.patrolLines then
+        for _, line in ipairs(self.patrolLines) do
+            line:Hide()
+        end
+    end
+end
+
+function DevilsaurTimers:ShowPatrolPaths()
+    if self.patrolLines then
+        for _, line in ipairs(self.patrolLines) do
+            line:Show()
+        end
+    end
+end
+
+function DevilsaurTimers:UpdatePatrolPathVisibility()
+    if self.db.profile.hideLines then
+        self:HidePatrolPaths()
+    else
+        self:ShowPatrolPaths()
     end
 end
 

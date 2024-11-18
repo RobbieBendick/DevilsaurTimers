@@ -145,21 +145,21 @@ function DevilsaurTimers:UpdateVisibility()
 end
 
 function DevilsaurTimers:ToggleShowLines()
-    local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
+    -- local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
     if self.db.profile.hideLines then
         self:UnloadHooks()
-        self:ClearPatrolPaths()
+        self:HidePatrolPaths()
         self:HideTimerTexts()
-        if mapOverlayFrame then
-            mapOverlayFrame:Hide()
-        end
+        -- if mapOverlayFrame then
+        --     mapOverlayFrame:Hide()
+        -- end
     else
         self:LoadHooks()
         self:DrawPatrolPaths()
         self:ShowTimerTexts()
-        if mapOverlayFrame then
-            mapOverlayFrame:Show()
-        end
+        -- if mapOverlayFrame then
+            -- mapOverlayFrame:Show()
+        -- end
     end
 end
 
