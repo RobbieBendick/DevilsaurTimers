@@ -144,7 +144,7 @@ function DevilsaurTimers:CreateMenu()
                     description2 = {
                         order = 1,
                         type = "description",
-                        name = "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t not on friendlist |TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t on friendlist",
+                        name = "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t not on friends list |TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t on friends list",
                     },
                     addPlayer = {
                         order = 2,
