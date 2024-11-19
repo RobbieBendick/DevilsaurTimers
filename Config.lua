@@ -139,7 +139,7 @@ function DevilsaurTimers:CreateMenu()
                     description1 = {
                         order = 0,
                         type = "description",
-                        name = "|TInterface\\COMMON\\help-i:17:17|t Will only work if the player also has you in their shared player list aswell, |cffffd700AND|r must be on your friends list.",
+                        name = "|TInterface\\COMMON\\help-i:17:17|t Will only work if the player also has you in their shared player list aswell, |cffffd700AND|r they must be on your friends list.",
                     },
                     description2 = {
                         order = 1,
