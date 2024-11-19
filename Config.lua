@@ -72,7 +72,7 @@ function DevilsaurTimers:CreateMenu()
                         name = "Respawn Timer (Seconds)",
                         desc = "Set the respawn timer for devilsaurs in seconds (default is 1500 seconds, or 25 minutes).",
                         min = 60,
-                        max = 3600,
+                        max = 1800,
                         step = 1,
                         get = function(info) return self.db.profile.respawnTimer or 1500 end,
                         set = function(info, value)

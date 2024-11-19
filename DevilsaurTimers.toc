@@ -1,4 +1,4 @@
-## Interface: 54851
+## Interface: 57638
 ## Author: Mageiden
 ## Title: DevilsaurTimers
 ## Notes: Timers on devilsaurs in Ungoro Crater.

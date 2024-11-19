@@ -29,7 +29,7 @@ function DevilsaurTimers:DrawPatrolPaths()
     self:HideTimerTexts()
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
-    
+
     local currentMapID = WorldMapFrame:GetMapID()
     local ungoroMapID = 1449
     if currentMapID ~= ungoroMapID then
@@ -90,9 +90,7 @@ end
 
 function DevilsaurTimers:ClearPatrolPaths()
     if self.patrolLines then
-        for _, line in ipairs(self.patrolLines) do
-            line:Hide()
-        end
+        self:HidePatrolPaths()
         self.patrolLines = {}
     end
 end
