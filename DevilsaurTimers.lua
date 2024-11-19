@@ -90,13 +90,11 @@ function DevilsaurTimers:StartTimer(progressBar)
 
             local minutes = math.floor(currentValue / 60)
             local seconds = currentValue % 60
-            progressBar.timerLabel:SetText(string.format("%02d:%02d", minutes, seconds))
+            local formattedTime = string.format("%02d:%02d", minutes, seconds)
+            progressBar.timerLabel:SetText(formattedTime)
             progressBar.timer = currentValue
 
-            -- update minimap text
-            if self.timerTexts and self.timerTexts[progressBar.color] then
-                self.timerTexts[progressBar.color]:SetText(string.format("%02d:%02d", minutes, seconds))
-            end
+            self:UpdateMapTimerText(progressBar.color, formattedTime)
         else
             self:ResetTimer(progressBar)
         end
@@ -116,9 +114,12 @@ function DevilsaurTimers:ResetTimer(progressBar)
     local r, g, b = self:GetColorByName("red")
     progressBar:SetStatusBarColor(r, g, b)
     
-    -- update minimap text
-    if self.timerTexts and self.timerTexts[progressBar.color] then
-        self.timerTexts[progressBar.color]:SetText("")
+    self:UpdateMapTimerText(progressBar.color, "")
+end
+
+function DevilsaurTimers:UpdateMapTimerText(color, text)
+    if self.timerTexts and self.timerTexts[color] then
+        self.timerTexts[color]:SetText(text)
     end
 end
 
@@ -261,7 +262,7 @@ function DevilsaurTimers:ResetFriendTimers(color)
     }
 
     local serializedData = self:Serialize(data)
-    
+
     for _, player in ipairs(self.db.profile.sharedPlayers) do
         if player and player ~= "" and self:IsPlayerOnline(player) then
             self:SendCommMessage(self.name, serializedData, "WHISPER", player)

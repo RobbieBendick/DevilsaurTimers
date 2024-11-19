@@ -154,10 +154,8 @@ function DevilsaurTimers:CreateMenu()
                         get = function() return "" end,
                         set = function(info, value)
                             if value and value ~= "" then
-                                local lowerValue = value:lower()
-                    
                                 for _, player in ipairs(self.db.profile.sharedPlayers) do
-                                    if player:lower() == lowerValue then
+                                    if player:lower() == value:lower() then
                                         self:Print("Player already exists in the shared list: " .. player)
                                         return
                                     end
