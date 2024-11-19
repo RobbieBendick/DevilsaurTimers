@@ -27,11 +27,11 @@ local timerText
 function DevilsaurTimers:DrawPatrolPaths()
     self:ClearPatrolPaths()
     self:HideTimerTexts()
-
-    local currentMapID = WorldMapFrame:GetMapID()
-    local ungoroMapID = 1449
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
+    
+    local currentMapID = WorldMapFrame:GetMapID()
+    local ungoroMapID = 1449
     if currentMapID ~= ungoroMapID then
         return
     end

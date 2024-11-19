@@ -57,10 +57,10 @@ function DevilsaurTimers:CreateProgressBars()
         progressBar:SetScript("OnMouseDown", function(_, button)
             if button == "LeftButton" then
                 self:StartTimer(progressBar)
-                self:TriggerFriendTimers(progressBar.color)
+                self:StartFriendTimer(progressBar.color)
             elseif button == "RightButton" then
                 self:ResetTimer(progressBar)
-                self:ResetFriendTimers(progressBar.color)
+                self:ResetFriendTimer(progressBar.color)
             end
         end)
 
@@ -132,7 +132,7 @@ function DevilsaurTimers:Toggle()
     end
 end
 
-function DevilsaurTimers:LoadSlashCommand()
+function DevilsaurTimers:LoadSlashCommands()
     SLASH_DEVILSAURTIMERS1 = "/dst"
     SLASH_DEVILSAURTIMERS2 = "/devilsaur"
     SLASH_DEVILSAURTIMERS3 = "/devilsaurtimer"
@@ -147,10 +147,8 @@ function DevilsaurTimers:RestorePosition()
     if not frame then return end
     if #self.db.profile.parentFramePosition == 0 then return end
     
-    C_Timer.After(0.25, function()
-        frame:ClearAllPoints()
-        frame:SetPoint(unpack(self.db.profile.parentFramePosition))
-    end)
+    frame:ClearAllPoints()
+    frame:SetPoint(unpack(self.db.profile.parentFramePosition))
 end
 
 function DevilsaurTimers:LoadHooks()
@@ -184,92 +182,6 @@ function DevilsaurTimers:LoadHooks()
     end)
 end
 
-function DevilsaurTimers:OnCommReceived(prefix, message, distribution, sender)
-    if prefix ~= self.name then return end
-    
-    local success, data = self:Deserialize(message)
-    if not success then
-        self:Print("Error: Failed to deserialize message from " .. sender)
-        return
-    end
-
-    if data.color then
-        local senderLower = sender:lower()
-        local senderIsInList = false
-        
-        for _, player in ipairs(self.db.profile.sharedPlayers) do
-            if player:lower() == senderLower then
-                senderIsInList = true
-                break
-            end
-        end
-        if not senderIsInList then return end
-
-        local progressBar = self.progressBars[data.color]
-        if progressBar then
-            if data.action == "StartTimer" then
-                self:StartTimer(progressBar)
-            elseif data.action == "ResetTimer" then
-                self:ResetTimer(progressBar)
-            end
-        else
-            self:Print("Error: Progress bar not found for color " .. data.color)
-        end
-    else
-        self:Print("Error: Missing color message from " .. sender)
-    end
-end
-
-function DevilsaurTimers:IsPlayerOnline(playerName)
-    for i = 1, C_FriendList.GetNumFriends() do
-        local friend = C_FriendList.GetFriendInfoByIndex(i)
-        if friend.name:lower() == playerName:lower() then
-            return friend.connected
-        end
-    end
-    return false
-end
-
-function DevilsaurTimers:TriggerFriendTimers(color)
-    if not color then
-        self:Print("Error: No color specified for TriggerFriendTimers.")
-        return
-    end
-
-    local data = {
-        color = color,
-        action = "StartTimer",
-    }
-
-    local serializedData = self:Serialize(data)
-
-    for _, player in ipairs(self.db.profile.sharedPlayers) do
-        if player and player ~= "" and self:IsPlayerOnline(player) then
-            self:SendCommMessage(self.name, serializedData, "WHISPER", player)
-        end
-    end
-end
-
-function DevilsaurTimers:ResetFriendTimers(color)
-    if not color then
-        self:Print("Error: No color specified for ResetFriendTimers.")
-        return
-    end
-
-    local data = {
-        color = color,
-        action = "ResetTimer",
-    }
-
-    local serializedData = self:Serialize(data)
-
-    for _, player in ipairs(self.db.profile.sharedPlayers) do
-        if player and player ~= "" and self:IsPlayerOnline(player) then
-            self:SendCommMessage(self.name, serializedData, "WHISPER", player)
-        end
-    end
-end
-
 local defaults = {
     profile = {
         hideBars = false,
@@ -290,7 +202,7 @@ function DevilsaurTimers:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
 
     self:LoadHooks()
-    self:LoadSlashCommand()
+    self:LoadSlashCommands()
     self:CreateMenu()
     self:CreateProgressBars()
     self:RestorePosition()
