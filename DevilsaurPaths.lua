@@ -30,12 +30,12 @@ function DevilsaurTimers:DrawPatrolPaths()
 
     local currentMapID = WorldMapFrame:GetMapID()
     local ungoroMapID = 1449
- 
+    self.patrolLines = self.patrolLines or {}
+    self.timerTexts = self.timerTexts or {}
     if currentMapID ~= ungoroMapID then
         return
     end
-    self.patrolLines = self.patrolLines or {}
-    self.timerTexts = self.timerTexts or {}
+
 
     local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"] or CreateFrame("Frame", "DevilsaurMapOverlayFrame", WorldMapFrame.ScrollContainer)
     mapOverlayFrame:ClearAllPoints()

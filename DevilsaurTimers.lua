@@ -57,8 +57,10 @@ function DevilsaurTimers:CreateProgressBars()
         progressBar:SetScript("OnMouseDown", function(_, button)
             if button == "LeftButton" then
                 self:StartTimer(progressBar)
+                self:TriggerFriendTimers(progressBar.color)
             elseif button == "RightButton" then
                 self:ResetTimer(progressBar)
+                self:ResetFriendTimers(progressBar.color)
             end
         end)
 
@@ -92,7 +94,7 @@ function DevilsaurTimers:StartTimer(progressBar)
             progressBar.timer = currentValue
 
             -- update minimap text
-            if self.timerTexts[progressBar.color] then
+            if self.timerTexts and self.timerTexts[progressBar.color] then
                 self.timerTexts[progressBar.color]:SetText(string.format("%02d:%02d", minutes, seconds))
             end
         else
@@ -113,8 +115,9 @@ function DevilsaurTimers:ResetTimer(progressBar)
 
     local r, g, b = self:GetColorByName("red")
     progressBar:SetStatusBarColor(r, g, b)
-
-    if self.timerTexts[progressBar.color] then
+    
+    -- update minimap text
+    if self.timerTexts and self.timerTexts[progressBar.color] then
         self.timerTexts[progressBar.color]:SetText("")
     end
 end
@@ -180,11 +183,90 @@ function DevilsaurTimers:LoadHooks()
     end)
 end
 
-function DevilsaurTimers:UnloadHooks()
-    hooksecurefunc(WorldMapFrame, "OnShow", function() end)
-    hooksecurefunc(WorldMapFrame, "OnMapChanged", function() end)
-    hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Maximize", function() end)
-    hooksecurefunc(WorldMapFrame.MaximizeMinimizeFrame, "Minimize", function() end)
+function DevilsaurTimers:OnCommReceived(prefix, message, distribution, sender)
+    if prefix ~= self.name then return end
+    
+    local success, data = self:Deserialize(message)
+    if not success then
+        self:Print("Error: Failed to deserialize message from " .. sender)
+        return
+    end
+
+    if data.color then
+        local senderLower = sender:lower()
+        local senderIsInList = false
+        
+        for _, player in ipairs(self.db.profile.sharedPlayers) do
+            if player:lower() == senderLower then
+                senderIsInList = true
+                break
+            end
+        end
+        if not senderIsInList then return end
+
+        local progressBar = self.progressBars[data.color]
+        if progressBar then
+            if data.action == "StartTimer" then
+                self:StartTimer(progressBar)
+            elseif data.action == "ResetTimer" then
+                self:ResetTimer(progressBar)
+            end
+        else
+            self:Print("Error: Progress bar not found for color " .. data.color)
+        end
+    else
+        self:Print("Error: Missing color message from " .. sender)
+    end
+end
+
+function DevilsaurTimers:IsPlayerOnline(playerName)
+    for i = 1, C_FriendList.GetNumFriends() do
+        local friend = C_FriendList.GetFriendInfoByIndex(i)
+        if friend.name:lower() == playerName:lower() then
+            return friend.connected
+        end
+    end
+    return false
+end
+
+function DevilsaurTimers:TriggerFriendTimers(color)
+    if not color then
+        self:Print("Error: No color specified for TriggerFriendTimers.")
+        return
+    end
+
+    local data = {
+        color = color,
+        action = "StartTimer",
+    }
+
+    local serializedData = self:Serialize(data)
+
+    for _, player in ipairs(self.db.profile.sharedPlayers) do
+        if player and player ~= "" and self:IsPlayerOnline(player) then
+            self:SendCommMessage(self.name, serializedData, "WHISPER", player)
+        end
+    end
+end
+
+function DevilsaurTimers:ResetFriendTimers(color)
+    if not color then
+        self:Print("Error: No color specified for ResetFriendTimers.")
+        return
+    end
+
+    local data = {
+        color = color,
+        action = "ResetTimer",
+    }
+
+    local serializedData = self:Serialize(data)
+    
+    for _, player in ipairs(self.db.profile.sharedPlayers) do
+        if player and player ~= "" and self:IsPlayerOnline(player) then
+            self:SendCommMessage(self.name, serializedData, "WHISPER", player)
+        end
+    end
 end
 
 local defaults = {
@@ -198,7 +280,8 @@ local defaults = {
         mapTimerTextOffset = {
             x = 0,
             y = 0
-        }
+        },
+        sharedPlayers = {},
     }
 }
 
@@ -210,4 +293,8 @@ function DevilsaurTimers:OnInitialize()
     self:CreateMenu()
     self:CreateProgressBars()
     self:RestorePosition()
+    self:DrawPatrolPaths()
+    self:UpdateVisibility()
+    
+    self:RegisterComm(self.name, "OnCommReceived")
 end

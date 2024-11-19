@@ -1,6 +1,6 @@
 local _, addon = ...
 addon.name = "DevilsaurTimers"
-local DevilsaurTimers = _G.LibStub("AceAddon-3.0"):NewAddon(addon.name, "AceConsole-3.0", "AceEvent-3.0")
+local DevilsaurTimers = _G.LibStub("AceAddon-3.0"):NewAddon(addon.name, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0", "AceSerializer-3.0")
 DevilsaurTimers.name = addon.name
 local GetAddOnMetadata = GetAddOnMetadata or C_AddOns.GetAddOnMetadata
 local AceConfig = LibStub("AceConfig-3.0")
@@ -8,7 +8,8 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 function DevilsaurTimers:CreateMenu()
     local version = GetAddOnMetadata(self.name, "Version") or "Unknown"
-	local author = GetAddOnMetadata(self.name, "Author") or "Mageiden"
+    local author = GetAddOnMetadata(self.name, "Author") or "Mageiden"
+    
     local options = {
         type = "group",
         name = self.name,
@@ -103,7 +104,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 1,
                         type = "range",
                         name = "Timer Text X Offset",
-                        desc = "Adjust the X offset for the map respawn timer next to each devilsaur path.",
+                        desc = "Adjust the X offset for the map respawn timer next to each devilsaur path. (Default is 0)",
                         min = -40,
                         max = 40,
                         step = 1,
@@ -117,7 +118,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 2,
                         type = "range",
                         name = "Timer Text Y Offset",
-                        desc = "Adjust the Y offset for the map respawn timer next to each devilsaur path.",
+                        desc = "Adjust the Y offset for the map respawn timer next to each devilsaur path. (Default is 0)",
                         min = -40,
                         max = 40,
                         step = 1,
@@ -129,12 +130,100 @@ function DevilsaurTimers:CreateMenu()
                     },
                 },
             },
+            sharedPlayers = {
+                type = "group",
+                name = "Shared Timer Settings",
+                order = 5,
+                inline = true,
+                args = {
+                    description1 = {
+                        order = 0,
+                        type = "description",
+                        name = "|TInterface\\COMMON\\help-i:17:17|t Will only work if the player also has you in their shared player list aswell, |cffffd700AND|r must be on your friends list.",
+                    },
+                    description2 = {
+                        order = 1,
+                        type = "description",
+                        name = "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t not on friendlist |TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t on friendlist",
+                    },
+                    addPlayer = {
+                        order = 2,
+                        type = "input",
+                        name = "Add Player Name",
+                        desc = "Enter a player's name to share respawn times.",
+                        get = function() return "" end,
+                        set = function(info, value)
+                            if value and value ~= "" then
+                                local lowerValue = value:lower()
+                    
+                                for _, player in ipairs(self.db.profile.sharedPlayers) do
+                                    if player:lower() == lowerValue then
+                                        self:Print("Player already exists in the shared list: " .. player)
+                                        return
+                                    end
+                                end
+                    
+                                table.insert(self.db.profile.sharedPlayers, value)
+                                self:Print("Added player: " .. value)
+                            end
+                        end,
+                    },
+                    removePlayer = {
+                        order = 3,
+                        type = "input",
+                        name = "Remove Player Name",
+                        desc = "Enter a player's name to remove from the shared list.",
+                        get = function() return "" end,
+                        set = function(info, value)
+                            for i, player in ipairs(self.db.profile.sharedPlayers) do
+                                if player:lower() == value:lower() then
+                                    table.remove(self.db.profile.sharedPlayers, i)
+                                    self:Print("Removed player: " .. player)
+                                    break
+                                end
+                            end
+                        end,
+                    },
+                    sharedPlayersList = {
+                        order = 4,
+                        type = "description",
+                        name = function()
+                            local players = self.db.profile.sharedPlayers
+                            if #players == 0 then
+                                return "No players to share with."
+                            end
+                    
+                            local result = "Players sharing respawn times:\n"
+                            for _, player in ipairs(players) do
+                                if player and player ~= "" then
+                                    local isFriend = self:IsFriend(player)
+                                    local statusIcon = isFriend and "|TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t" or "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t"
+                                    result = result .. statusIcon .. " " .. player .. "\n"
+                                end
+                            end
+                    
+                            return result
+                        end,
+                    }
+                    
+                },
+            },
         },
     }
 
     LibStub("AceConfig-3.0"):RegisterOptionsTable(self.name, options)
-
     LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.name, self.name)
+end
+
+function DevilsaurTimers:IsFriend(playerName)
+    local numFriends = C_FriendList.GetNumFriends()
+    for i = 1, numFriends do
+        local info = C_FriendList.GetFriendInfoByIndex(i)
+        if info and info.name and info.name:lower() == playerName:lower() then
+            return true
+        end
+    end
+    return false
 end
 
 function DevilsaurTimers:UpdateVisibility()
@@ -145,11 +234,6 @@ function DevilsaurTimers:UpdateVisibility()
 end
 
 function DevilsaurTimers:ToggleShowLines()
-    if self.db.profile.hideLines then
-        self:UnloadHooks()
-    else
-        self:LoadHooks()
-    end
     self:UpdatePatrolPathVisibility()
 end
 
