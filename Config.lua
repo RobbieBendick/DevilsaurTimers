@@ -83,7 +83,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 2,
                         type = "range",
                         name = "Line Thickness",
-                        desc = "Set the line thickness for the devilsaur paths on the map.",
+                        desc = "Set the line thickness for the devilsaur paths on the map. (default is 4)",
                         min = 1,
                         max = 8,
                         step = 1,

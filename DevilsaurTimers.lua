@@ -57,10 +57,10 @@ function DevilsaurTimers:CreateProgressBars()
         progressBar:SetScript("OnMouseDown", function(_, button)
             if button == "LeftButton" then
                 self:StartTimer(progressBar)
-                self:StartFriendTimer(progressBar.color)
+                self:StartFriendTimer(color)
             elseif button == "RightButton" then
                 self:ResetTimer(progressBar)
-                self:ResetFriendTimer(progressBar.color)
+                self:ResetFriendTimer(color)
             end
         end)
 
