@@ -145,6 +145,9 @@ function DevilsaurTimers:CreateMenu()
                         order = 1,
                         type = "description",
                         name = "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t Player is not on your friends list   |TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t Player is on your friends list",
+                        hidden = function ()
+                            return #self.db.profile.sharedPlayers == 0
+                        end
                     },
                     addPlayer = {
                         order = 2,
