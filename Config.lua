@@ -44,7 +44,7 @@ function DevilsaurTimers:CreateMenu()
                         get = function(info) return self.db.profile.hideLines end,
                         set = function(info, value)
                             self.db.profile.hideLines = value
-                            self:ToggleShowLines()
+                            self:UpdatePatrolPathVisibility()
                         end,
                     },
                     hideMapTimers = {
@@ -229,10 +229,6 @@ function DevilsaurTimers:UpdateVisibility()
     if not parentFrame then return end
 
     parentFrame:SetShown(not self.db.profile.hideBars)
-end
-
-function DevilsaurTimers:ToggleShowLines()
-    self:UpdatePatrolPathVisibility()
 end
 
 function DevilsaurTimers:UpdateMapTimerTexts()
