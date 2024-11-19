@@ -3,7 +3,7 @@
 ## Title: DevilsaurTimers
 ## Notes: Timers on devilsaurs in Ungoro Crater.
 ## DefaultState: enabled
-## Version: v0.0.2
+## Version: v0.0.3
 ## SavedVariables: DevilsaurTimersDB
 
 embeds.xml

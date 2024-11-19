@@ -133,7 +133,7 @@ function DevilsaurTimers:Toggle()
 end
 
 function DevilsaurTimers:LoadSlashCommand()
-    SLASH_DEVILSAURTIMERS1 = "/dt"
+    SLASH_DEVILSAURTIMERS1 = "/dst"
     SLASH_DEVILSAURTIMERS2 = "/devilsaur"
     SLASH_DEVILSAURTIMERS3 = "/devilsaurtimer"
     SLASH_DEVILSAURTIMERS4 = "/devilsaurtimers"
