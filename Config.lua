@@ -1,6 +1,6 @@
 local _, addon = ...
 addon.name = "DevilsaurTimers"
-local DevilsaurTimers = _G.LibStub("AceAddon-3.0"):NewAddon(addon.name, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0", "AceSerializer-3.0")
+local DevilsaurTimers = LibStub("AceAddon-3.0"):NewAddon(addon.name, "AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0", "AceSerializer-3.0")
 DevilsaurTimers.name = addon.name
 local GetAddOnMetadata = GetAddOnMetadata or C_AddOns.GetAddOnMetadata
 local AceConfig = LibStub("AceConfig-3.0")
