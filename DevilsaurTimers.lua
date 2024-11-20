@@ -182,6 +182,41 @@ function DevilsaurTimers:LoadHooks()
     end)
 end
 
+function DevilsaurTimers:HandleSkinnedDevilsaur(msg, ...)
+    local map = C_Map.GetBestMapForUnit("player")
+    if not map then return end
+
+    local position = C_Map.GetPlayerMapPosition(map, "player")
+    if not position then return end
+
+    local ungoroMapID = 1449
+    if map ~= ungoroMapID then return end
+
+    if not msg:find("Devilsaur") then return end
+
+    if not self.db.profile.autoTimer then return end
+
+    local posX, posY = position:GetXY()
+
+    for color, path in pairs(self.patrolPaths) do
+        local firstPoint = path[1]
+        if firstPoint then
+            local startX, startY = firstPoint[1], firstPoint[2]
+
+            local deltaX = math.abs(posX - startX)
+            local deltaY = math.abs(posY - startY)
+            local totalDelta = deltaX + deltaY
+
+            if totalDelta <= 0.11 then
+                local progressBar = self.progressBars[color]
+                self:StartTimer(progressBar)
+                self:StartFriendTimer(color)
+                return
+            end
+        end
+    end
+end
+
 local defaults = {
     profile = {
         hideBars = false,
@@ -195,6 +230,7 @@ local defaults = {
             y = 0
         },
         sharedPlayers = {},
+        autoTimer = true,
     }
 }
 
@@ -209,5 +245,7 @@ function DevilsaurTimers:OnInitialize()
     self:DrawPatrolPaths()
     self:UpdateVisibility()
     
+    self:RegisterEvent("CHAT_MSG_LOOT", "HandleSkinnedDevilsaur")
+
     self:RegisterComm(self.name, "OnCommReceived")
 end

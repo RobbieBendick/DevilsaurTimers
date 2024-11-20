@@ -92,6 +92,22 @@ function DevilsaurTimers:CreateMenu()
                             self.db.profile.lineThickness = value
                         end,
                     },
+                    description1 = {
+                        order = 3,
+                        type = "description",
+                        name = " ",
+                        width = 0.05,
+                    },
+                    autoTimer = {
+                        order = 4,
+                        type = "toggle",
+                        name = "Enable Auto Timer",
+                        desc = "Checks if you're near the spawn point of any devilsaurs and automatically sets the timer when you loot a Devilsaur Leather.",
+                        get = function(info) return self.db.profile.autoTimer end,
+                        set = function(info, value)
+                            self.db.profile.autoTimer = value
+                        end,
+                    },
                 },
             },
             mapTimerSettings = {
