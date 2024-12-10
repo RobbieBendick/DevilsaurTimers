@@ -33,7 +33,7 @@ function DevilsaurTimers:CreateMenu()
                         get = function(info) return self.db.profile.hideBars end,
                         set = function(info, value)
                             self.db.profile.hideBars = value
-                            self:UpdateVisibility()
+                            self:UpdateProgressBarVisibility()
                         end,
                     },
                     hideLines = {
@@ -70,7 +70,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 1,
                         type = "range",
                         name = "Respawn Timer (Seconds)",
-                        desc = "Set the respawn timer for devilsaurs in seconds (default is 1500 seconds, or 25 minutes).",
+                        desc = "Set the respawn timer for devilsaurs in seconds (default is 600 seconds, or 10 minutes).",
                         min = 60,
                         max = 1800,
                         step = 1,
@@ -110,10 +110,33 @@ function DevilsaurTimers:CreateMenu()
                     },
                 },
             },
+            progressBar = {
+                type = "group",
+                name = "Progress Bar Settings",
+                order = 5,
+                inline = true,
+                args = {
+                    width = {
+                        order = 1,
+                        type = "range",
+                        name = "Progress Bar Width",
+                        desc = "Adjust progress bar width",
+                        min = 0,
+                        max = 400,
+                        step = 1,
+                        get = function(info) return self.db.profile.progressBarDimensions.width or 200 end,
+                        set = function(info, value)
+                            self.db.profile.progressBarDimensions.width = value
+                            self:UpdateProgressBarSize()
+                        end,
+                    },
+                    
+                },
+            },  
             mapTimerSettings = {
                 type = "group",
                 name = "Map Timer Settings",
-                order = 4,
+                order = 5,
                 inline = true,
                 args = {
                     timerXOffset = {
@@ -149,7 +172,7 @@ function DevilsaurTimers:CreateMenu()
             sharedPlayers = {
                 type = "group",
                 name = "Shared Timer Settings",
-                order = 5,
+                order = 6,
                 inline = true,
                 args = {
                     description1 = {
@@ -232,6 +255,15 @@ function DevilsaurTimers:CreateMenu()
     LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.name, self.name)
 end
 
+function DevilsaurTimers:UpdateProgressBarSize()
+    for i=1, 6 do
+        local frame = _G["DevilsaurProgressBar"..i]
+        if not frame then return end
+        frame:SetSize(self.db.profile.progressBarDimensions.width, self.db.profile.progressBarDimensions.height)
+    end
+
+end
+
 function DevilsaurTimers:IsFriend(playerName)
     local numFriends = C_FriendList.GetNumFriends()
     for i = 1, numFriends do
@@ -243,7 +275,7 @@ function DevilsaurTimers:IsFriend(playerName)
     return false
 end
 
-function DevilsaurTimers:UpdateVisibility()
+function DevilsaurTimers:UpdateProgressBarVisibility()
     local parentFrame = _G["DevilsaurTimersParentFrame"]
     if not parentFrame then return end
 
@@ -260,4 +292,50 @@ function DevilsaurTimers:UpdateMapTimerTexts()
             frame[action](frame)
         end
     end
+end
+
+local defaults = {
+    profile = {
+        hideBars = false,
+        hideLines = false,
+        hideMapTimers = false,
+        respawnTimer = 7 * 60,
+        timers = {},
+        parentProgressBarFramePosition = {},
+        lineThickness = 4,
+        mapTimerTextOffset = {
+            x = 0,
+            y = 0
+        },
+        sharedPlayers = {},
+        autoTimer = true,
+        parentProgressBarDimensions = {
+            width = 200,
+            height = 150,
+        },
+        progressBarDimensions = {
+            width = 200,
+            height = 20,
+        },
+    }
+}
+
+function DevilsaurTimers:OnInitialize()
+	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
+
+    self:LoadHooks()
+    self:LoadSlashCommands()
+    self:CreateMenu()
+    self:CreateProgressBars()
+    self:RestoreProgressBarPosition()
+    self:DrawPatrolPaths()
+    self:UpdateProgressBarVisibility()
+    self:RestoreTimers()
+    
+    self:RegisterEvent("CHAT_MSG_LOOT", "HandleSkinnedDevilsaur")
+    self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "HandleCombatLog")
+    self:RegisterEvent("UNIT_TARGET", "HandleUnitTarget")
+
+
+    self:RegisterComm(self.name, "OnCommReceived")
 end

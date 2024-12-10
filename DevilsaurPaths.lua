@@ -12,7 +12,7 @@ DevilsaurTimers.patrolPaths = {
         {0.34, 0.221}, {0.3435, 0.2485}, {0.3478, 0.286}, {0.3662, 0.3453}, {0.35, 0.363}, {0.33, 0.37}, {0.3244, 0.4368}, {0.31, 0.475}, {0.3116, 0.5120}, {0.30, 0.5314}
     },
     teal = {
-        {0.5612, 0.32}, {0.5711, 0.357}, {0.58, 0.4050}, {0.5874, 0.4453}, {0.5683, 0.4655}, {0.5676, 0.5144}, {0.5683, 0.5559}, {0.5732, 0.6069}, {0.5591, 0.63},{0.5647, 0.6569}, {0.5864, 0.6984}, {0.5735, 0.7239}, {0.5789, 0.742}
+        {0.5789, 0.742}, {0.5735, 0.7239}, {0.5864, 0.6984}, {0.5647, 0.6569}, {0.5591, 0.63}, {0.5732, 0.6069}, {0.5683, 0.5559}, {0.5676, 0.5144}, {0.5683, 0.4655}, {0.5874, 0.4453}, {0.58, 0.4050}, {0.5711, 0.357}, {0.5612, 0.32}
     },
     yellow = {
         {0.3116, 0.3453}, {0.32, 0.358}, {0.34, 0.3793}, {0.37, 0.424}, {0.39, 0.46}, {0.395, 0.496}, {0.4030, 0.54}, {0.40, 0.594}, {0.409, 0.608}, {0.423, 0.615},
@@ -22,9 +22,40 @@ DevilsaurTimers.patrolPaths = {
     },
 }
 
+function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments, color)
+    local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
+    
+    local points = {}
+    for i = 1, numSegments do
+        local angle = (i - 1) * (2 * math.pi / numSegments)
+        local x = centerX + radius * math.cos(angle)
+        local y = centerY + radius * math.sin(angle)
+        table.insert(points, {x, y})
+    end
+
+    -- draw lines between consecutive points to form a circle
+    for i = 1, #points - 1 do
+        local line = mapOverlayFrame:CreateLine()
+        line:SetColorTexture(self:GetColorByName(color))
+        line:SetThickness(5)
+
+        local x1, y1 = unpack(points[i])
+        local x2, y2 = unpack(points[i + 1])
+
+        local startX = x1 * mapOverlayFrame:GetWidth()
+        local startY = -y1 * mapOverlayFrame:GetHeight()
+        local endX = x2 * mapOverlayFrame:GetWidth()
+        local endY = -y2 * mapOverlayFrame:GetHeight()
+
+        line:SetStartPoint("TOPLEFT", mapOverlayFrame, startX, startY)
+        line:SetEndPoint("TOPLEFT", mapOverlayFrame, endX, endY)
+    end
+end
+
 function DevilsaurTimers:DrawPatrolPaths()
     self:ClearPatrolPaths()
     self:HideTimerTexts()
+    self:DeletePatrolCircles()
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
 
@@ -39,7 +70,7 @@ function DevilsaurTimers:DrawPatrolPaths()
     mapOverlayFrame:SetAllPoints(WorldMapFrame.ScrollContainer.Child)
     mapOverlayFrame:SetFrameStrata("HIGH")
     mapOverlayFrame:SetToplevel(true)
-    
+
     for color, path in pairs(self.patrolPaths) do
         for i = 1, #path - 1 do
             local line = mapOverlayFrame:CreateLine()
@@ -79,10 +110,61 @@ function DevilsaurTimers:DrawPatrolPaths()
 
             timerText:SetPoint("CENTER", mapOverlayFrame, "TOPLEFT", posX, posY)
             timerText:SetTextColor(1, 1, 1)
+
+            self:DrawCircleAtPoint(x, y, 0.0042, 25, color)
         end
     end
     self:UpdateMapTimerTexts()
     self:UpdatePatrolPathVisibility()
+end
+
+function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments, color)
+    local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
+
+    local mapWidth = mapOverlayFrame:GetWidth()
+    local mapHeight = mapOverlayFrame:GetHeight()
+
+    local pixelRadius = radius * mapWidth
+
+    local points = {}
+    for i = 1, numSegments do
+        local angle = (i - 1) * (2 * math.pi / numSegments)
+        local x = centerX + radius * math.cos(angle)
+        local y = centerY + radius * math.sin(angle)
+        table.insert(points, {x, y})
+    end
+
+    if not self.circles then
+        self.circles = {}
+    end
+    self.circles[color] = self.circles[color] or {}
+
+    for i = 1, #points - 1 do
+        local line = mapOverlayFrame:CreateLine()
+        line:SetColorTexture(self:GetColorByName(color))
+        line:SetThickness(2)
+
+        local x1, y1 = unpack(points[i])
+        local x2, y2 = unpack(points[i + 1])
+
+        local startX = x1 * mapWidth
+        local startY = -y1 * mapHeight
+        local endX = x2 * mapWidth
+        local endY = -y2 * mapHeight
+
+        line:SetStartPoint("TOPLEFT", mapOverlayFrame, startX, startY)
+        line:SetEndPoint("TOPLEFT", mapOverlayFrame, endX, endY)
+
+        table.insert(self.circles[color], line)
+    end
+
+    local filledCircle = mapOverlayFrame:CreateTexture(nil, "OVERLAY")
+    filledCircle:SetColorTexture(self:GetColorByName(color))
+    filledCircle:SetSize(pixelRadius * 2, pixelRadius * 2)
+
+    filledCircle:SetPoint("CENTER", mapOverlayFrame, "TOPLEFT", centerX * mapWidth, -centerY * mapHeight)
+
+    table.insert(self.circles[color], filledCircle)
 end
 
 function DevilsaurTimers:ClearPatrolPaths()
@@ -96,6 +178,20 @@ function DevilsaurTimers:HidePatrolPaths()
     if self.patrolLines then
         for _, line in ipairs(self.patrolLines) do
             line:Hide()
+        end
+    end
+end
+
+function DevilsaurTimers:DeletePatrolCircles()
+    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
+    if not self.circles then return end
+    for i, color in ipairs(dinoColors) do
+        local circle = self.circles[color]
+        if circle then
+            for _, line in ipairs(circle) do
+                line:Hide()
+            end
+            self.circles[color] = nil
         end
     end
 end
