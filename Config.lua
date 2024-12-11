@@ -8,6 +8,33 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 DevilsaurTimers.pathColors = {"blue", "pink", "teal", "green", "yellow", "red"}
 
+local defaults = {
+    profile = {
+        hideBars = false,
+        hideLines = false,
+        hideMapTimers = false,
+        respawnTimer = 7 * 60,
+        timers = {},
+        previousTimers = {},
+        parentProgressBarFramePosition = {},
+        lineThickness = 4,
+        mapTimerTextOffset = {
+            x = 0,
+            y = 0
+        },
+        sharedPlayers = {},
+        autoTimer = true,
+        parentProgressBarDimensions = {
+            width = 200,
+            height = 150,
+        },
+        progressBarDimensions = {
+            width = 200,
+            height = 20,
+        },
+    }
+}
+
 function DevilsaurTimers:CreateMenu()
     local version = GetAddOnMetadata(self.name, "Version") or "Unknown"
     local author = GetAddOnMetadata(self.name, "Author") or "Mageiden"
@@ -72,7 +99,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 1,
                         type = "range",
                         name = "Respawn Timer (Seconds)",
-                        desc = "Set the respawn timer for devilsaurs in seconds (default is 600 seconds, or 10 minutes).",
+                        desc = string.format("Set the respawn timer for devilsaurs in seconds (default is %d seconds, or %d minutes).", defaults.profile.respawnTimer, defaults.profile.respawnTimer / 60),
                         min = 60,
                         max = 1800,
                         step = 1,
@@ -85,7 +112,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 2,
                         type = "range",
                         name = "Line Thickness",
-                        desc = "Set the line thickness for the devilsaur paths on the map. (default is 4)",
+                        desc = string.format("Set the line thickness for the devilsaur paths on the map. (default is %d)", defaults.profile.lineThickness),
                         min = 1,
                         max = 8,
                         step = 1,
@@ -104,7 +131,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 4,
                         type = "toggle",
                         name = "Enable Auto Timer",
-                        desc = "Checks if you're near the spawn point of any devilsaurs and automatically sets the timer when you loot a Devilsaur Leather.",
+                        desc = "Checks if you're near the spawn point of any devilsaurs and automatically sets the timer when you see a Devilsaur killed.",
                         get = function(info) return self.db.profile.autoTimer end,
                         set = function(info, value)
                             self.db.profile.autoTimer = value
@@ -145,7 +172,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 1,
                         type = "range",
                         name = "Timer Text X Offset",
-                        desc = "Adjust the X offset for the map respawn timer next to each devilsaur path. (Default is 0)",
+                        desc = string.format("Adjust the X offset for the map respawn timer next to each devilsaur path. (Default is %d)", defaults.profile.mapTimerTextOffset.x),
                         min = -40,
                         max = 40,
                         step = 1,
@@ -159,7 +186,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 2,
                         type = "range",
                         name = "Timer Text Y Offset",
-                        desc = "Adjust the Y offset for the map respawn timer next to each devilsaur path. (Default is 0)",
+                        desc = string.format("Adjust the Y offset for the map respawn timer next to each devilsaur path. (Default is %d)", defaults.profile.mapTimerTextOffset.y),
                         min = -40,
                         max = 40,
                         step = 1,
@@ -295,32 +322,7 @@ function DevilsaurTimers:UpdateMapTimerTexts()
     end
 end
 
-local defaults = {
-    profile = {
-        hideBars = false,
-        hideLines = false,
-        hideMapTimers = false,
-        respawnTimer = 7 * 60,
-        timers = {},
-        previousTimers = {},
-        parentProgressBarFramePosition = {},
-        lineThickness = 4,
-        mapTimerTextOffset = {
-            x = 0,
-            y = 0
-        },
-        sharedPlayers = {},
-        autoTimer = true,
-        parentProgressBarDimensions = {
-            width = 200,
-            height = 150,
-        },
-        progressBarDimensions = {
-            width = 200,
-            height = 20,
-        },
-    }
-}
+
 
 function DevilsaurTimers:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
