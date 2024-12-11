@@ -1,7 +1,7 @@
 local _, addon = ...
 local DevilsaurTimers = LibStub("AceAddon-3.0"):GetAddon(addon.name)
 DevilsaurTimers.patrolPaths = {
-    -- coords
+    -- coords // {startLine, endLine} forms 1 line
     blue = {
         {0.5711, 0.24}, {0.588, 0.286}, {0.603, 0.274}, {0.644, 0.26}, {0.668, 0.253}, {0.689, 0.261}, {0.7023, 0.2921}, {0.675, 0.311}, {0.644, 0.304}, {0.642, 0.331}
     },
@@ -37,7 +37,7 @@ function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments
     for i = 1, #points - 1 do
         local line = mapOverlayFrame:CreateLine()
         line:SetColorTexture(self:GetColorByName(color))
-        line:SetThickness(5)
+        line:SetThickness(self.db.profile.lineThickness + 1)
 
         local x1, y1 = unpack(points[i])
         local x2, y2 = unpack(points[i + 1])
@@ -55,7 +55,7 @@ end
 function DevilsaurTimers:DrawPatrolPaths()
     self:ClearPatrolPaths()
     self:HideTimerTexts()
-    self:DeletePatrolCircles()
+    self:HidePatrolCircles()
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
 
@@ -182,16 +182,15 @@ function DevilsaurTimers:HidePatrolPaths()
     end
 end
 
-function DevilsaurTimers:DeletePatrolCircles()
-    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
+function DevilsaurTimers:HidePatrolCircles()
     if not self.circles then return end
-    for i, color in ipairs(dinoColors) do
+    for i, color in ipairs(self.pathColors) do
         local circle = self.circles[color]
         if circle then
             for _, line in ipairs(circle) do
                 line:Hide()
             end
-            self.circles[color] = nil
+            circle = nil
         end
     end
 end
@@ -213,9 +212,7 @@ function DevilsaurTimers:UpdatePatrolPathVisibility()
 end
 
 function DevilsaurTimers:HideTimerTexts()
-    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
-
-    for _, color in ipairs(dinoColors) do
+    for _, color in ipairs(self.pathColors) do
         local frame = _G[color.."TimerText"]
         if frame then
             frame:Hide()
@@ -224,9 +221,7 @@ function DevilsaurTimers:HideTimerTexts()
 end
 
 function DevilsaurTimers:ShowTimerTexts()
-    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
-
-    for _, color in ipairs(dinoColors) do
+    for _, color in ipairs(self.pathColors) do
         local frame = _G[color.."TimerText"]
         if frame then
             frame:Show()

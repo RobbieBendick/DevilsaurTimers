@@ -2,8 +2,6 @@ local _, addon = ...
 local DevilsaurTimers = LibStub("AceAddon-3.0"):GetAddon(addon.name)
 
 function DevilsaurTimers:CreateProgressBars()
-    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
-
     local parentFrame = CreateFrame("Frame", "DevilsaurTimersParentFrame", UIParent)
     parentFrame:SetSize(self.db.profile.parentProgressBarDimensions.width, self.db.profile.parentProgressBarDimensions.height)
     parentFrame:SetPoint("CENTER")
@@ -20,7 +18,7 @@ function DevilsaurTimers:CreateProgressBars()
 
     self.progressBars = {}
 
-    for i, color in ipairs(dinoColors) do
+    for i, color in ipairs(self.pathColors) do
         local progressBar = CreateFrame("StatusBar", "DevilsaurProgressBar" .. i, parentFrame)
         progressBar:SetSize(self.db.profile.progressBarDimensions.width, self.db.profile.progressBarDimensions.height)
         local spacing = 25
@@ -38,6 +36,7 @@ function DevilsaurTimers:CreateProgressBars()
         nameLabel:SetPoint("RIGHT", progressBar, "RIGHT", -5, 0)
         nameLabel:SetText(color)
         nameLabel:SetTextColor(1, 1, 1)
+        
         progressBar.color = color
 
         local timerLabel = progressBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -56,8 +55,12 @@ function DevilsaurTimers:CreateProgressBars()
 
         progressBar:SetScript("OnMouseDown", function(_, button)
             if button == "LeftButton" then
-                self:StartTimer(progressBar)
-                self:StartFriendTimer(color)
+                if IsAltKeyDown() then
+                    self:UndoTimer(progressBar)
+                else
+                    self:StartTimer(progressBar)
+                    self:StartFriendTimer(color)
+                end
             elseif button == "RightButton" then
                 self:ResetTimer(progressBar)
                 self:ResetFriendTimer(color)
@@ -68,11 +71,24 @@ function DevilsaurTimers:CreateProgressBars()
     end
 end
 
+function DevilsaurTimers:UndoTimer(progressBar)
+    local previousTimerData = self.db.profile.previousTimers[progressBar.color]
+    if previousTimerData and previousTimerData.duration > 0 then
+        local remainingTime = previousTimerData.duration - (GetServerTime() - previousTimerData.startTime)
+        local currentTimerData = self.db.profile.timers[progressBar]
+        local currentRemainingTime = currentTimerData and currentTimerData.duration or 0
+
+        if remainingTime > 0 then
+            self:StartTimer(progressBar, remainingTime)
+            self:Print(string.format("%s has been changed to the previous timer.", progressBar.color:sub(1,1):upper() .. progressBar.color:sub(2):lower()))
+        end
+    end
+end
+
+
 function DevilsaurTimers:RestoreTimers()
-    local c = 0
     for progressBarColor, timerData in pairs(self.db.profile.timers) do
         local remainingTime = timerData.duration - (GetServerTime() - timerData.startTime)
-        c = c + 1
         if remainingTime > 0 then
             local progressBar = self.progressBars[progressBarColor]
             self:StartTimer(progressBar, remainingTime)
@@ -85,8 +101,23 @@ end
 function DevilsaurTimers:StartTimer(progressBar, optionalDuration)
     local duration = optionalDuration or (self.db.profile.respawnTimer - 1)
 
+    if self.db.profile.timers[progressBar.color] then
+        local timerData = self.db.profile.timers[progressBar.color]
+        local remainingTime = timerData.duration - (GetServerTime() - timerData.startTime)
+        
+        if remainingTime > 0 then
+            if self.db.profile.previousTimers then
+                self.db.profile.previousTimers[progressBar.color] = {
+                    startTime = timerData.startTime,
+                    duration = timerData.duration,
+                }
+            end
+        else
+            self.db.profile.previousTimers[progressBar.color] = nil
+        end
+    end
+
     progressBar:SetMinMaxValues(0, self.db.profile.respawnTimer - 1)
-    
     progressBar:SetValue(duration)
     progressBar:SetStatusBarColor(1, 1, 0)
 
@@ -130,11 +161,11 @@ function DevilsaurTimers:ResetTimer(progressBar)
 
     progressBar:SetMinMaxValues(0, 1)
     progressBar:SetValue(1)
+
     progressBar.timerLabel:SetText("")
 
     progressBar:SetStatusBarColor(self:GetColorByName("red"))
     
-
     self.db.profile.timers[progressBar.color] = nil
 
     self:UpdateMapTimerText(progressBar.color, "")
@@ -206,13 +237,13 @@ function DevilsaurTimers:LoadHooks()
 end
 
 function DevilsaurTimers:HandleCombatLog()
+    local map = C_Map.GetBestMapForUnit("player")
+    local position = C_Map.GetPlayerMapPosition(map, "player")
+    local x, y = position:GetXY()
+
     local _, eventType, _, sourceGUID, sourceName, _, _, destGUID, destName, _, _, spellID = CombatLogGetCurrentEventInfo()
     if eventType == "SPELL_DAMAGE" or eventType == "SWING_DAMAGE" or eventType == "RANGE_DAMAGE" then
         if sourceGUID == UnitGUID("player") and destName and destName:lower():find("devilsaur") then
-            local map = C_Map.GetBestMapForUnit("player")
-            local position = C_Map.GetPlayerMapPosition(map, "player")
-            local x, y = position:GetXY()
-
             if x and y then
                 if not self.taggedDevilsaurs then
                     self.taggedDevilsaurs = {}
@@ -226,6 +257,48 @@ function DevilsaurTimers:HandleCombatLog()
                         guid = destGUID
                     }
                 end
+            end
+        end
+    elseif eventType == "UNIT_DIED" then
+        if destName and destName:lower():find("devilsaur") then
+            if not self.deadDevilsaurs then
+                self.deadDevilsaurs = {}
+            end
+            if self.lastDevilsaurTargeted and self.lastDevilsaurTargeted.guid and self.lastDevilsaurTargeted.guid == destGUID then
+                -- use first targeted x and y instead
+                x = self.lastDevilsaurTargeted.x
+                y = self.lastDevilsaurTargeted.y
+            end
+
+            self.deadDevilsaurs[destGUID] = {
+                x = x,
+                y = y,
+                timestamp = time(),
+                guid = destGUID
+            }
+
+            local closestDistance = math.huge
+            local closestLineColor = nil
+
+            for pathColor, pathPoints in pairs(self.patrolPaths) do
+                for i = 1, #pathPoints - 1 do
+                    local x1, y1 = unpack(pathPoints[i])    
+                    local x2, y2 = unpack(pathPoints[i + 1])
+
+                    local distance = self:DistanceToSegment(x, y, x1, y1, x2, y2)
+
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestLineColor = pathColor
+                    end
+                end
+            end
+
+            if closestLineColor then
+                local progressBar = self.progressBars[closestLineColor]
+                self:StartTimer(progressBar)
+                self:StartFriendTimer(closestLineColor)
+                self:Print("Automatically started timer for ".. closestLineColor .. ".")
             end
         end
     end
@@ -245,57 +318,25 @@ function DevilsaurTimers:DistanceToSegment(px, py, x1, y1, x2, y2)
     return math.sqrt(distX * distX + distY * distY)
 end
 
-function DevilsaurTimers:HandleSkinnedDevilsaur(event, msg, ...)
-    local map = C_Map.GetBestMapForUnit("player")
-    if not map then return end
-
-    local position = C_Map.GetPlayerMapPosition(map, "player")
-    if not position then return end
-
-    local ungoroMapID = 1449
-    if map ~= ungoroMapID then return end
-
-    if not msg:find("Devilsaur") then return end
-
-    if not self.db.profile.autoTimer then return end
-
-    if not self.lastDevilsaurTargetedGUID then return end
-
-    local targetDino = self.taggedDevilsaurs and self.taggedDevilsaurs[self.lastDevilsaurTargetedGUID] or nil
-    if not targetDino then return end
-
-    local closestDistance = math.huge
-    local closestLineColor = nil
-
-    for pathColor, pathPoints in pairs(self.patrolPaths) do
-        for i = 1, #pathPoints - 1 do
-            local x1, y1 = unpack(pathPoints[i])    
-            local x2, y2 = unpack(pathPoints[i + 1])
-
-            local distance = self:DistanceToSegment(targetDino.x, targetDino.y, x1, y1, x2, y2)
-
-            if distance < closestDistance then
-                closestDistance = distance
-                closestLineColor = pathColor
-            end
-        end
-    end
-
-    if closestLineColor then
-        local progressBar = self.progressBars[closestLineColor]
-        self:StartTimer(progressBar)
-        self:StartFriendTimer(closestLineColor)
-        self:Print("Automatically started timer for ".. closestLineColor .. ".")
-    end
-end
-
 function DevilsaurTimers:HandleUnitTarget(_, unitWhoSwitchedTarget)
     if unitWhoSwitchedTarget ~= "player" then return end
     if UnitIsFriend("player", "target") then return end
     if UnitIsPlayer("target") then return end
+    local map = C_Map.GetBestMapForUnit("player")
+    local position = C_Map.GetPlayerMapPosition(map, "player")
+    local x, y = position:GetXY()
+
     local targetName = GetUnitName("target")
     if not targetName then return end
+
     if not string.find(targetName, "Devilsaur") then return end
 
-    self.lastDevilsaurTargetedGUID = UnitGUID("target")
+    -- dont override x,y positions, get the position where the user first targets the devilsaur
+    if self.lastDevilsaurTargeted and self.lastDevilsaurTargeted.guid and self.lastDevilsaurTargeted.guid == UnitGUID("target") then return end
+
+    self.lastDevilsaurTargeted = {
+        x = x,
+        y = y,
+        guid = UnitGUID("target"),
+    }
 end

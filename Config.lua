@@ -6,6 +6,8 @@ local GetAddOnMetadata = GetAddOnMetadata or C_AddOns.GetAddOnMetadata
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
+DevilsaurTimers.pathColors = {"blue", "pink", "teal", "green", "yellow", "red"}
+
 function DevilsaurTimers:CreateMenu()
     local version = GetAddOnMetadata(self.name, "Version") or "Unknown"
     local author = GetAddOnMetadata(self.name, "Author") or "Mageiden"
@@ -283,10 +285,9 @@ function DevilsaurTimers:UpdateProgressBarVisibility()
 end
 
 function DevilsaurTimers:UpdateMapTimerTexts()
-    local dinoColors = {"blue", "pink", "teal", "green", "yellow", "red"}
     local action = self.db.profile.hideMapTimers and "Hide" or "Show"
 
-    for _, color in ipairs(dinoColors) do
+    for _, color in ipairs(self.pathColors) do
         local frame = _G[color.."TimerText"]
         if frame and frame[action] then
             frame[action](frame)
@@ -301,6 +302,7 @@ local defaults = {
         hideMapTimers = false,
         respawnTimer = 7 * 60,
         timers = {},
+        previousTimers = {},
         parentProgressBarFramePosition = {},
         lineThickness = 4,
         mapTimerTextOffset = {
@@ -332,10 +334,8 @@ function DevilsaurTimers:OnInitialize()
     self:UpdateProgressBarVisibility()
     self:RestoreTimers()
     
-    self:RegisterEvent("CHAT_MSG_LOOT", "HandleSkinnedDevilsaur")
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "HandleCombatLog")
     self:RegisterEvent("UNIT_TARGET", "HandleUnitTarget")
-
 
     self:RegisterComm(self.name, "OnCommReceived")
 end
