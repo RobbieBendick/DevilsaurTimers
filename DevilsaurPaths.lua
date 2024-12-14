@@ -22,7 +22,7 @@ DevilsaurTimers.patrolPaths = {
     },
 }
 
-function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments, color)
+function DevilsaurTimers:DrawSquareAtPoint(centerX, centerY, radius, numSegments, color)
     local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
     
     local points = {}
@@ -33,7 +33,7 @@ function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments
         table.insert(points, {x, y})
     end
 
-    -- draw lines between consecutive points to form a circle
+    -- draw lines between consecutive points to form a square
     for i = 1, #points - 1 do
         local line = mapOverlayFrame:CreateLine()
         line:SetColorTexture(self:GetColorByName(color))
@@ -55,7 +55,7 @@ end
 function DevilsaurTimers:DrawPatrolPaths()
     self:ClearPatrolPaths()
     self:HideTimerTexts()
-    self:HidePatrolCircles()
+    self:HidePatrolSquares()
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
 
@@ -111,14 +111,14 @@ function DevilsaurTimers:DrawPatrolPaths()
             timerText:SetPoint("CENTER", mapOverlayFrame, "TOPLEFT", posX, posY)
             timerText:SetTextColor(1, 1, 1)
 
-            self:DrawCircleAtPoint(x, y, 0.0042, 25, color)
+            self:DrawSquareAtPoint(x, y, 0.0042, 25, color)
         end
     end
     self:UpdateMapTimerTexts()
     self:UpdatePatrolPathVisibility()
 end
 
-function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments, color)
+function DevilsaurTimers:DrawSquareAtPoint(centerX, centerY, radius, numSegments, color)
     local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
 
     local mapWidth = mapOverlayFrame:GetWidth()
@@ -134,10 +134,10 @@ function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments
         table.insert(points, {x, y})
     end
 
-    if not self.circles then
-        self.circles = {}
+    if not self.squares then
+        self.squares = {}
     end
-    self.circles[color] = self.circles[color] or {}
+    self.squares[color] = self.squares[color] or {}
 
     for i = 1, #points - 1 do
         local line = mapOverlayFrame:CreateLine()
@@ -155,16 +155,16 @@ function DevilsaurTimers:DrawCircleAtPoint(centerX, centerY, radius, numSegments
         line:SetStartPoint("TOPLEFT", mapOverlayFrame, startX, startY)
         line:SetEndPoint("TOPLEFT", mapOverlayFrame, endX, endY)
 
-        table.insert(self.circles[color], line)
+        table.insert(self.squares[color], line)
     end
 
-    local filledCircle = mapOverlayFrame:CreateTexture(nil, "OVERLAY")
-    filledCircle:SetColorTexture(self:GetColorByName(color))
-    filledCircle:SetSize(pixelRadius * 2, pixelRadius * 2)
+    local filledSquare = mapOverlayFrame:CreateTexture(nil, "OVERLAY")
+    filledSquare:SetColorTexture(self:GetColorByName(color))
+    filledSquare:SetSize(pixelRadius * 2, pixelRadius * 2)
 
-    filledCircle:SetPoint("CENTER", mapOverlayFrame, "TOPLEFT", centerX * mapWidth, -centerY * mapHeight)
+    filledSquare:SetPoint("CENTER", mapOverlayFrame, "TOPLEFT", centerX * mapWidth, -centerY * mapHeight)
 
-    table.insert(self.circles[color], filledCircle)
+    table.insert(self.squares[color], filledSquare)
 end
 
 function DevilsaurTimers:ClearPatrolPaths()
@@ -182,15 +182,15 @@ function DevilsaurTimers:HidePatrolPaths()
     end
 end
 
-function DevilsaurTimers:HidePatrolCircles()
-    if not self.circles then return end
+function DevilsaurTimers:HidePatrolSquares()
+    if not self.squares then return end
     for i, color in ipairs(self.pathColors) do
-        local circle = self.circles[color]
-        if circle then
-            for _, line in ipairs(circle) do
+        local square = self.squares[color]
+        if square then
+            for _, line in ipairs(square) do
                 line:Hide()
             end
-            circle = nil
+            square = nil
         end
     end
 end
@@ -239,4 +239,17 @@ function DevilsaurTimers:GetColorByName(colorName)
         red = {1, 0, 0},
     }
     return unpack(colors[colorName] or {1, 1, 1})
+end
+
+function DevilsaurTimers:PrintColorizedWord(colorName, sentence)
+    -- Get the RGB values for the color
+    local r, g, b = self:GetColorByName(colorName)
+    -- Convert RGB values to a hexadecimal WoW color code
+    local hexColor = ("|cff%02x%02x%02x"):format(r * 255, g * 255, b * 255)
+    -- Capitalize the color name and wrap it with the WoW color code
+    local colorizedWord = ("%s%s|r"):format(hexColor, colorName:sub(1, 1):upper() .. colorName:sub(2):lower())
+    -- Replace the plain color name in the sentence with the colorized version
+    local colorizedSentence = sentence:gsub(colorName:sub(1, 1):upper() .. colorName:sub(2):lower(), colorizedWord)
+    -- Print the result
+    self:Print(colorizedSentence)
 end

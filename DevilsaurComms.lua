@@ -3,6 +3,10 @@ local DevilsaurTimers = LibStub("AceAddon-3.0"):GetAddon(addon.name)
 
 function DevilsaurTimers:OnCommReceived(prefix, message, distribution, sender)
     if prefix ~= self.name then return end
+
+    if not self.db.profile.isSharedPlayersEnabled then return end
+
+    if not self:IsPlayerEnabled(sender) then return end
     
     local success, data = self:Deserialize(message)
     if not success then
@@ -16,10 +20,15 @@ function DevilsaurTimers:OnCommReceived(prefix, message, distribution, sender)
         local progressBar = self.progressBars[data.color]
         if progressBar then
             if data.action == "StartTimer" then
-                self:StartTimer(progressBar)
+                if data.remainingTime then
+                    self:StartTimer(progressBar, remainingTime)
+                else
+                    self:StartTimer(progressBar)
+                end
             elseif data.action == "ResetTimer" then
                 self:ResetTimer(progressBar)
             end
+
         else
             self:Print("Error: Progress bar not found for color " .. data.color)
         end
@@ -30,8 +39,17 @@ end
 
 function DevilsaurTimers:IsSenderInSharedPlayers(sender)
     for _, player in ipairs(self.db.profile.sharedPlayers) do
-        if player:lower() == sender:lower() then
+        if player.name:lower() == sender:lower() then
             return true
+        end
+    end
+    return false
+end
+
+function DevilsaurTimers:IsPlayerEnabled(playerName)
+    for _, player in ipairs(self.db.profile.sharedPlayers) do
+        if player.name:lower() == playerName:lower() then
+            return player.enabled == true
         end
     end
     return false
@@ -47,7 +65,9 @@ function DevilsaurTimers:IsPlayerOnline(playerName)
     return false
 end
 
-function DevilsaurTimers:StartFriendTimer(color)
+function DevilsaurTimers:StartFriendTimer(color, remainingTime)
+    if not self.db.profile.isSharedPlayersEnabled then return end
+
     if not color then
         self:Print("Error: No color specified for StartFriendTimer.")
         return
@@ -56,18 +76,24 @@ function DevilsaurTimers:StartFriendTimer(color)
     local data = {
         color = color,
         action = "StartTimer",
+        remainingTime = remainingTime,
     }
 
     local serializedData = self:Serialize(data)
 
     for _, player in ipairs(self.db.profile.sharedPlayers) do
-        if player and player ~= "" and self:IsPlayerOnline(player) then
-            self:SendCommMessage(self.name, serializedData, "WHISPER", player)
+        if player.name and player.name ~= "" and self:IsPlayerOnline(player.name) then
+            if self:IsPlayerEnabled(player.name) then
+                self:SendCommMessage(self.name, serializedData, "WHISPER", player.name)
+            end
         end
     end
 end
 
 function DevilsaurTimers:ResetFriendTimer(color)
+    if not self.db.profile.isSharedPlayersEnabled then return end
+    
+
     if not color then
         self:Print("Error: No color specified for ResetFriendTimer.")
         return
@@ -81,8 +107,10 @@ function DevilsaurTimers:ResetFriendTimer(color)
     local serializedData = self:Serialize(data)
 
     for _, player in ipairs(self.db.profile.sharedPlayers) do
-        if player and player ~= "" and self:IsPlayerOnline(player) then
-            self:SendCommMessage(self.name, serializedData, "WHISPER", player)
+        if player.name and player.name ~= "" and self:IsPlayerOnline(player.name) then
+            if self:IsPlayerEnabled(player.name) then
+                self:SendCommMessage(self.name, serializedData, "WHISPER", player.name)
+            end
         end
     end
 end

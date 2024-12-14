@@ -1,9 +1,9 @@
-## Interface: 57638
+## Interface: 57979
 ## Author: Mageiden
 ## Title: DevilsaurTimers
 ## Notes: Timers and paths for devilsaurs in Un'goro Crater.
 ## DefaultState: enabled
-## Version: v0.0.3
+## Version: v0.0.4
 ## SavedVariables: DevilsaurTimersDB
 
 embeds.xml

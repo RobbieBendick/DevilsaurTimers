@@ -5,6 +5,7 @@ DevilsaurTimers.name = addon.name
 local GetAddOnMetadata = GetAddOnMetadata or C_AddOns.GetAddOnMetadata
 local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
 DevilsaurTimers.pathColors = {"blue", "pink", "teal", "green", "yellow", "red"}
 
@@ -24,6 +25,7 @@ local defaults = {
         },
         sharedPlayers = {},
         autoTimer = true,
+        isSharedPlayersEnabled = true,
         parentProgressBarDimensions = {
             width = 200,
             height = 150,
@@ -39,7 +41,7 @@ function DevilsaurTimers:CreateMenu()
     local version = GetAddOnMetadata(self.name, "Version") or "Unknown"
     local author = GetAddOnMetadata(self.name, "Author") or "Mageiden"
     
-    local options = {
+    self.options = {
         type = "group",
         name = self.name,
         args = {
@@ -103,7 +105,7 @@ function DevilsaurTimers:CreateMenu()
                         min = 60,
                         max = 1800,
                         step = 1,
-                        get = function(info) return self.db.profile.respawnTimer or 1500 end,
+                        get = function(info) return self.db.profile.respawnTimer or 420 end,
                         set = function(info, value)
                             self.db.profile.respawnTimer = value
                         end,
@@ -207,15 +209,15 @@ function DevilsaurTimers:CreateMenu()
                     description1 = {
                         order = 0,
                         type = "description",
-                        name = "|TInterface\\COMMON\\help-i:17:17|t Will only work if the player also has you in their shared player list aswell, |cffffd700AND|r they must be on |cffffd700YOUR|r friends list.",
+                        name = "|TInterface\\COMMON\\help-i:17:17|t Will only work if the player also has you in their shared player list as well, |cffffd700AND|r they must be on |cffffd700YOUR|r friends list.",
                     },
                     description2 = {
                         order = 1,
                         type = "description",
                         name = "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t Player is not on your friends list   |TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t Player is on your friends list",
-                        hidden = function ()
+                        hidden = function()
                             return #self.db.profile.sharedPlayers == 0
-                        end
+                        end,
                     },
                     addPlayer = {
                         order = 2,
@@ -226,14 +228,15 @@ function DevilsaurTimers:CreateMenu()
                         set = function(info, value)
                             if value and value ~= "" then
                                 for _, player in ipairs(self.db.profile.sharedPlayers) do
-                                    if player:lower() == value:lower() then
-                                        self:Print("Player already exists in the shared list: " .. player)
+                                    if player.name and player.name:lower() == value:lower() then
+                                        self:Print("Player already exists in the shared list: " .. player.name)
                                         return
                                     end
                                 end
-                    
-                                table.insert(self.db.profile.sharedPlayers, value)
+                                table.insert(self.db.profile.sharedPlayers, { name = value, enabled = true })
                                 self:Print("Added player: " .. value)
+                                self.options.args.playerToggles.args = self:GetPlayerToggles()
+                                AceConfigRegistry:NotifyChange("DevilsaurTimers")                            
                             end
                         end,
                     },
@@ -245,43 +248,62 @@ function DevilsaurTimers:CreateMenu()
                         get = function() return "" end,
                         set = function(info, value)
                             for i, player in ipairs(self.db.profile.sharedPlayers) do
-                                if player:lower() == value:lower() then
+                                if player.name:lower() == value:lower() then
                                     table.remove(self.db.profile.sharedPlayers, i)
-                                    self:Print("Removed player: " .. player)
+                                    self:Print("Removed player: " .. player.name)
+                                    self.options.args.playerToggles.args = self:GetPlayerToggles()
+                                    AceConfigRegistry:NotifyChange("DevilsaurTimers")
                                     break
                                 end
                             end
                         end,
                     },
-                    sharedPlayersList = {
+                    toggleSharedTimer = {
                         order = 4,
-                        type = "description",
-                        name = function()
-                            local players = self.db.profile.sharedPlayers
-                            if #players == 0 then
-                                return "No players to share with."
-                            end
-                    
-                            local result = "Players sharing respawn times:\n"
-                            for _, player in ipairs(players) do
-                                if player and player ~= "" then
-                                    local isFriend = self:IsFriend(player)
-                                    local statusIcon = isFriend and "|TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t" or "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t"
-                                    result = result .. statusIcon .. " " .. player .. "\n"
-                                end
-                            end
-                    
-                            return result
+                        type = "toggle",
+                        name = "Enable Shared Timer",
+                        desc = "Disable or enable the shared timers with players on your shared player list.",
+                        get = function() return self.db.profile.isSharedPlayersEnabled end,
+                        set = function(info, value)
+                            self.db.profile.isSharedPlayersEnabled = value
                         end,
-                    }
-                    
+                    },
                 },
-            },
+            }
         },
     }
 
-    LibStub("AceConfig-3.0"):RegisterOptionsTable(self.name, options)
+    self.options.args.playerToggles = {
+        order = 10, type = "group", name = "Shared Player Toggle List", inline = true, args = self:GetPlayerToggles()
+    }
+
+    LibStub("AceConfig-3.0"):RegisterOptionsTable(self.name, self.options)
     LibStub("AceConfigDialog-3.0"):AddToBlizOptions(self.name, self.name)
+end
+
+function DevilsaurTimers:GetPlayerToggles()
+    local toggles = {}
+    for index, player in ipairs(self.db.profile.sharedPlayers) do
+        toggles["playerToggle" .. index] = {
+            type = "toggle",
+            name = function()
+                local statusIcon = self:IsFriend(player.name) and 
+                                    "|TInterface\\RAIDFRAME\\ReadyCheck-Ready:16:16|t" or
+                                    "|TInterface\\RAIDFRAME\\ReadyCheck-NotReady:16:16|t"
+                return player.name:sub(1, 1):upper() .. player.name:sub(2):lower() .. " " .. statusIcon
+            end,
+            desc = "Toggle timer sharing for " .. player.name:sub(1, 1):upper() .. player.name:sub(2):lower(),
+            get = function() return player.enabled end,
+            set = function(info, value)
+                player.enabled = value
+            end,
+            disabled = function()
+                return not self.db.profile.isSharedPlayersEnabled
+            end
+            
+        }
+    end
+    return toggles
 end
 
 function DevilsaurTimers:UpdateProgressBarSize()
@@ -290,7 +312,6 @@ function DevilsaurTimers:UpdateProgressBarSize()
         if not frame then return end
         frame:SetSize(self.db.profile.progressBarDimensions.width, self.db.profile.progressBarDimensions.height)
     end
-
 end
 
 function DevilsaurTimers:IsFriend(playerName)
@@ -327,8 +348,14 @@ end
 function DevilsaurTimers:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
 
+    -- fix stuff for ppl with old version of addon
+    if self.db.profile.sharedPlayers[1] and type(self.db.profile.sharedPlayers[1]) ~= "table" then
+        self.db.profile.sharedPlayers = {}
+    end
+
     self:LoadHooks()
     self:LoadSlashCommands()
+
     self:CreateMenu()
     self:CreateProgressBars()
     self:RestoreProgressBarPosition()

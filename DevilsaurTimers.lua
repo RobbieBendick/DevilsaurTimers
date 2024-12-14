@@ -80,11 +80,16 @@ function DevilsaurTimers:UndoTimer(progressBar)
 
         if remainingTime > 0 then
             self:StartTimer(progressBar, remainingTime)
-            self:Print(string.format("%s has been changed to the previous timer.", progressBar.color:sub(1,1):upper() .. progressBar.color:sub(2):lower()))
+            self:StartFriendTimer(progressBar.color, remainingTime)
+            self:PrintColorizedWord(
+                progressBar.color,
+                string.format("%s has been changed to the previous timer.", 
+                progressBar.color:sub(1, 1):upper() .. progressBar.color:sub(2):lower())
+            )
+
         end
     end
 end
-
 
 function DevilsaurTimers:RestoreTimers()
     for progressBarColor, timerData in pairs(self.db.profile.timers) do
@@ -298,7 +303,11 @@ function DevilsaurTimers:HandleCombatLog()
                 local progressBar = self.progressBars[closestLineColor]
                 self:StartTimer(progressBar)
                 self:StartFriendTimer(closestLineColor)
-                self:Print("Automatically started timer for ".. closestLineColor .. ".")
+                self:PrintColorizedWord(
+                    closestLineColor,
+                    string.format("Automatically started timer for %s.", 
+                    closestLineColor:sub(1, 1):upper() .. closestLineColor:sub(2):lower())
+                )
             end
         end
     end
@@ -340,3 +349,4 @@ function DevilsaurTimers:HandleUnitTarget(_, unitWhoSwitchedTarget)
         guid = UnitGUID("target"),
     }
 end
+
