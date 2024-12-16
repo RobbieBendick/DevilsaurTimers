@@ -21,7 +21,7 @@ function DevilsaurTimers:OnCommReceived(prefix, message, distribution, sender)
         if progressBar then
             if data.action == "StartTimer" then
                 if data.remainingTime then
-                    self:StartTimer(progressBar, remainingTime)
+                    self:StartTimer(progressBar, data.remainingTime)
                 else
                     self:StartTimer(progressBar)
                 end

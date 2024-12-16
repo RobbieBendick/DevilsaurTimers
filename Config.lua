@@ -133,7 +133,7 @@ function DevilsaurTimers:CreateMenu()
                         order = 4,
                         type = "toggle",
                         name = "Enable Auto Timer",
-                        desc = "Checks if you're near the spawn point of any devilsaurs and automatically sets the timer when you see a Devilsaur killed.",
+                        desc = "Tracks the location where you first spot a Devilsaur and automatically sets the timer for the corresponding color when the Devilsaur is killed. |cff808080(May occasionally have issues with yellow/red due to overlapping paths.)|r",
                         get = function(info) return self.db.profile.autoTimer end,
                         set = function(info, value)
                             self.db.profile.autoTimer = value
@@ -274,7 +274,7 @@ function DevilsaurTimers:CreateMenu()
     }
 
     self.options.args.playerToggles = {
-        order = 10, type = "group", name = "Shared Player Toggle List", inline = true, args = self:GetPlayerToggles()
+        order = 10, type = "group", name = "Shared Player List", inline = true, args = self:GetPlayerToggles()
     }
 
     LibStub("AceConfig-3.0"):RegisterOptionsTable(self.name, self.options)
@@ -343,8 +343,6 @@ function DevilsaurTimers:UpdateMapTimerTexts()
     end
 end
 
-
-
 function DevilsaurTimers:OnInitialize()
 	self.db = LibStub("AceDB-3.0"):New(self.name.."DB", defaults, true)
 
@@ -353,7 +351,7 @@ function DevilsaurTimers:OnInitialize()
         self.db.profile.sharedPlayers = {}
     end
 
-    self:LoadHooks()
+    self:LoadHooks()    
     self:LoadSlashCommands()
 
     self:CreateMenu()

@@ -241,15 +241,12 @@ function DevilsaurTimers:GetColorByName(colorName)
     return unpack(colors[colorName] or {1, 1, 1})
 end
 
-function DevilsaurTimers:PrintColorizedWord(colorName, sentence)
-    -- Get the RGB values for the color
+function DevilsaurTimers:PrintColorized(colorName, sentence)
     local r, g, b = self:GetColorByName(colorName)
-    -- Convert RGB values to a hexadecimal WoW color code
     local hexColor = ("|cff%02x%02x%02x"):format(r * 255, g * 255, b * 255)
-    -- Capitalize the color name and wrap it with the WoW color code
+
     local colorizedWord = ("%s%s|r"):format(hexColor, colorName:sub(1, 1):upper() .. colorName:sub(2):lower())
-    -- Replace the plain color name in the sentence with the colorized version
     local colorizedSentence = sentence:gsub(colorName:sub(1, 1):upper() .. colorName:sub(2):lower(), colorizedWord)
-    -- Print the result
+
     self:Print(colorizedSentence)
 end

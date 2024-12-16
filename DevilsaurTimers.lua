@@ -28,6 +28,9 @@ function DevilsaurTimers:CreateProgressBars()
         local r, g, b = self:GetColorByName("red")
         progressBar:SetStatusBarColor(r, g, b)
 
+        progressBar:SetMinMaxValues(0, 1)
+        progressBar:SetValue(1)
+
         local bg = progressBar:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(0, 0, 0, 0.5)
@@ -41,7 +44,6 @@ function DevilsaurTimers:CreateProgressBars()
 
         local timerLabel = progressBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         timerLabel:SetPoint("LEFT", progressBar, "LEFT", 5, 0)
-        timerLabel:SetText("")
         timerLabel:SetTextColor(1, 1, 1)
 
         progressBar.timerLabel = timerLabel
@@ -57,49 +59,57 @@ function DevilsaurTimers:CreateProgressBars()
             if button == "LeftButton" then
                 if IsAltKeyDown() then
                     self:UndoTimer(progressBar)
+                elseif IsControlKeyDown() then
+                    progressBar.isDragging = true
+                    progressBar.startX = GetCursorPosition()
+                    self:StartTimer(progressBar)
                 else
                     self:StartTimer(progressBar)
                     self:StartFriendTimer(color)
+                    self:PrintColorized(progressBar.color, string.format(
+                        'Timer has been started for %s.',
+                        progressBar.color:sub(1, 1):upper() .. progressBar.color:sub(2):lower()
+                    ))
                 end
             elseif button == "RightButton" then
                 self:ResetTimer(progressBar)
                 self:ResetFriendTimer(color)
+                self:PrintColorized(progressBar.color, string.format(
+                    'Timer has been reset for %s.',
+                    progressBar.color:sub(1, 1):upper() .. progressBar.color:sub(2):lower()
+                ))
+            end
+        end)
+
+        progressBar:SetScript("OnMouseUp", function(_, button)
+            if button == "LeftButton" and progressBar.isDragging then
+                progressBar.isDragging = false
+                progressBar.startX = nil
+                local remainingTime = progressBar:GetValue()
+                self:StartTimer(progressBar, remainingTime)
+                self:StartFriendTimer(progressBar.color, remainingTime)
+
+                local minutes = math.floor(progressBar:GetValue() / 60)
+                local seconds = progressBar:GetValue() % 60
+                self:PrintColorized(
+                    progressBar.color, 
+                    string.format(
+                        "Timer for %s has been set to%s%s%s.",
+                        progressBar.color:sub(1, 1):upper() .. progressBar.color:sub(2):lower(),
+                        minutes > 0 and string.format(" %d %s", minutes, minutes == 1 and "minute" or "minutes") or "",
+                        minutes > 0 and seconds > 0 and " and" or "",
+                        seconds > 0 and string.format(" %d seconds", seconds) or ""
+                    )
+                )
+            end
+        end)
+        progressBar:SetScript("OnUpdate", function()
+            if progressBar.isDragging and IsControlKeyDown() then
+                self:HandleProgressBarDrag(progressBar)
             end
         end)
 
         self.progressBars[progressBar.color] = progressBar
-    end
-end
-
-function DevilsaurTimers:UndoTimer(progressBar)
-    local previousTimerData = self.db.profile.previousTimers[progressBar.color]
-    if previousTimerData and previousTimerData.duration > 0 then
-        local remainingTime = previousTimerData.duration - (GetServerTime() - previousTimerData.startTime)
-        local currentTimerData = self.db.profile.timers[progressBar]
-        local currentRemainingTime = currentTimerData and currentTimerData.duration or 0
-
-        if remainingTime > 0 then
-            self:StartTimer(progressBar, remainingTime)
-            self:StartFriendTimer(progressBar.color, remainingTime)
-            self:PrintColorizedWord(
-                progressBar.color,
-                string.format("%s has been changed to the previous timer.", 
-                progressBar.color:sub(1, 1):upper() .. progressBar.color:sub(2):lower())
-            )
-
-        end
-    end
-end
-
-function DevilsaurTimers:RestoreTimers()
-    for progressBarColor, timerData in pairs(self.db.profile.timers) do
-        local remainingTime = timerData.duration - (GetServerTime() - timerData.startTime)
-        if remainingTime > 0 then
-            local progressBar = self.progressBars[progressBarColor]
-            self:StartTimer(progressBar, remainingTime)
-        else
-            self.db.profile.timers[progressBarColor] = nil
-        end
     end
 end
 
@@ -156,6 +166,7 @@ function DevilsaurTimers:StartTimer(progressBar, optionalDuration)
             self:ResetTimer(progressBar)
         end
     end)
+
 end
 
 function DevilsaurTimers:ResetTimer(progressBar)
@@ -174,6 +185,66 @@ function DevilsaurTimers:ResetTimer(progressBar)
     self.db.profile.timers[progressBar.color] = nil
 
     self:UpdateMapTimerText(progressBar.color, "")
+end
+
+function DevilsaurTimers:UndoTimer(progressBar)
+    local previousTimerData = self.db.profile.previousTimers[progressBar.color]
+    if previousTimerData and previousTimerData.duration > 0 then
+        local remainingTime = previousTimerData.duration - (GetServerTime() - previousTimerData.startTime)
+        local currentTimerData = self.db.profile.timers[progressBar]
+        local currentRemainingTime = currentTimerData and currentTimerData.duration or 0
+
+        if remainingTime > 0 then
+            self:StartTimer(progressBar, remainingTime)
+            self:StartFriendTimer(progressBar.color, remainingTime)
+            self:PrintColorized(
+                progressBar.color,
+                string.format("%s has been changed to its previous timer.", 
+                progressBar.color:sub(1, 1):upper() .. progressBar.color:sub(2):lower())
+            )
+        end
+    end
+end
+
+function DevilsaurTimers:RestoreTimers()
+    for progressBarColor, timerData in pairs(self.db.profile.timers) do
+        local remainingTime = timerData.duration - (GetServerTime() - timerData.startTime)
+        if remainingTime > 0 then
+            local progressBar = self.progressBars[progressBarColor]
+            self:StartTimer(progressBar, remainingTime)
+        else
+            self.db.profile.timers[progressBarColor] = nil
+        end
+    end
+end
+
+function DevilsaurTimers:HandleProgressBarDrag(progressBar)
+    local cursorX = GetCursorPosition()
+        
+    local progressBarLeft = progressBar:GetLeft()
+    local progressBarRight = progressBar:GetRight()
+
+    local scaleX = progressBar:GetEffectiveScale() -- ui scale
+    local cursorRelativePosition = (cursorX / scaleX) - progressBarLeft
+
+    local progressBarWidth = progressBarRight - progressBarLeft
+
+    local percentage = cursorRelativePosition / progressBarWidth
+
+    percentage = math.min(math.max(percentage, 0), 1)
+
+    local minDuration, maxDuration = progressBar:GetMinMaxValues()
+
+    local newValue = percentage * (maxDuration - minDuration) + minDuration
+
+    progressBar:SetValue(newValue)
+
+    local remaining = math.ceil(newValue)
+    local minutes = math.floor(remaining / 60)
+    local seconds = remaining % 60
+    progressBar.timerLabel:SetText(string.format("%02d:%02d", minutes, seconds))
+
+    progressBar.startX = cursorX
 end
 
 function DevilsaurTimers:UpdateMapTimerText(color, text)
@@ -282,28 +353,13 @@ function DevilsaurTimers:HandleCombatLog()
                 guid = destGUID
             }
 
-            local closestDistance = math.huge
-            local closestLineColor = nil
-
-            for pathColor, pathPoints in pairs(self.patrolPaths) do
-                for i = 1, #pathPoints - 1 do
-                    local x1, y1 = unpack(pathPoints[i])    
-                    local x2, y2 = unpack(pathPoints[i + 1])
-
-                    local distance = self:DistanceToSegment(x, y, x1, y1, x2, y2)
-
-                    if distance < closestDistance then
-                        closestDistance = distance
-                        closestLineColor = pathColor
-                    end
-                end
-            end
-
+            local closestLineColor = self:FindClosestLineColor(x, y)
+            
             if closestLineColor then
                 local progressBar = self.progressBars[closestLineColor]
                 self:StartTimer(progressBar)
                 self:StartFriendTimer(closestLineColor)
-                self:PrintColorizedWord(
+                self:PrintColorized(
                     closestLineColor,
                     string.format("Automatically started timer for %s.", 
                     closestLineColor:sub(1, 1):upper() .. closestLineColor:sub(2):lower())
@@ -311,6 +367,25 @@ function DevilsaurTimers:HandleCombatLog()
             end
         end
     end
+end
+
+function DevilsaurTimers:FindClosestLineColor(x, y)
+    local closestDistance = math.huge
+    local closestLineColor = nil
+
+    for pathColor, pathPoints in pairs(self.patrolPaths) do
+        for i = 1, #pathPoints - 1 do
+            local x1, y1 = unpack(pathPoints[i])    
+            local x2, y2 = unpack(pathPoints[i + 1])
+
+            local distance = self:DistanceToSegment(x, y, x1, y1, x2, y2)
+            if distance < closestDistance then
+                closestDistance = distance
+                closestLineColor = pathColor
+            end
+        end
+    end
+    return closestLineColor
 end
 
 function DevilsaurTimers:DistanceToSegment(px, py, x1, y1, x2, y2)
