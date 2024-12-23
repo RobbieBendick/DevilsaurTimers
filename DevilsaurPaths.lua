@@ -22,40 +22,11 @@ DevilsaurTimers.patrolPaths = {
     },
 }
 
-function DevilsaurTimers:DrawSquareAtPoint(centerX, centerY, radius, numSegments, color)
-    local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"]
-    
-    local points = {}
-    for i = 1, numSegments do
-        local angle = (i - 1) * (2 * math.pi / numSegments)
-        local x = centerX + radius * math.cos(angle)
-        local y = centerY + radius * math.sin(angle)
-        table.insert(points, {x, y})
-    end
-
-    -- draw lines between consecutive points to form a square
-    for i = 1, #points - 1 do
-        local line = mapOverlayFrame:CreateLine()
-        line:SetColorTexture(self:GetColorByName(color))
-        line:SetThickness(self.db.profile.lineThickness + 1)
-
-        local x1, y1 = unpack(points[i])
-        local x2, y2 = unpack(points[i + 1])
-
-        local startX = x1 * mapOverlayFrame:GetWidth()
-        local startY = -y1 * mapOverlayFrame:GetHeight()
-        local endX = x2 * mapOverlayFrame:GetWidth()
-        local endY = -y2 * mapOverlayFrame:GetHeight()
-
-        line:SetStartPoint("TOPLEFT", mapOverlayFrame, startX, startY)
-        line:SetEndPoint("TOPLEFT", mapOverlayFrame, endX, endY)
-    end
-end
-
 function DevilsaurTimers:DrawPatrolPaths()
     self:ClearPatrolPaths()
     self:HideTimerTexts()
     self:HidePatrolSquares()
+    -- self:UpdateEnemyPlayerRespawnTimerVisibility()
     self.patrolLines = self.patrolLines or {}
     self.timerTexts = self.timerTexts or {}
 
@@ -68,8 +39,7 @@ function DevilsaurTimers:DrawPatrolPaths()
     local mapOverlayFrame = _G["DevilsaurMapOverlayFrame"] or CreateFrame("Frame", "DevilsaurMapOverlayFrame", WorldMapFrame.ScrollContainer)
     mapOverlayFrame:ClearAllPoints()
     mapOverlayFrame:SetAllPoints(WorldMapFrame.ScrollContainer.Child)
-    mapOverlayFrame:SetFrameStrata("HIGH")
-    mapOverlayFrame:SetToplevel(true)
+    mapOverlayFrame:SetFrameStrata("DIALOG")
 
     for color, path in pairs(self.patrolPaths) do
         for i = 1, #path - 1 do
@@ -114,8 +84,64 @@ function DevilsaurTimers:DrawPatrolPaths()
             self:DrawSquareAtPoint(x, y, 0.0042, 25, color)
         end
     end
-    self:UpdateMapTimerTexts()
+    self:UpdateMapDevilsaurTimerTexts()
     self:UpdatePatrolPathVisibility()
+end
+
+function DevilsaurTimers:StartTombstoneTimer(destGUID, remainingTime)
+    local tombstoneData = self.db.profile.tombstones[destGUID]
+    if not tombstoneData then return end
+    local timerLabel = _G["PinTimerLabel"..destGUID]
+    if timerLabel then
+        local initialMins = math.floor(remainingTime / 60)
+        local initialSecs = remainingTime % 60
+        local initialFormattedTime = (initialMins < 10) and string.format("%d:%02d", initialMins, initialSecs) or string.format("%02d:%02d", initialMins, initialSecs)
+        timerLabel:SetText(initialFormattedTime)
+    end
+
+    tombstoneData.timerTicker = C_Timer.NewTicker(1, function()
+        remainingTime = remainingTime - 1
+        if remainingTime > 0 then
+            local minutes = math.floor(remainingTime / 60)
+            local seconds = remainingTime % 60
+            local formattedTime = (minutes < 10) and string.format("%d:%02d", minutes, seconds) or string.format("%02d:%02d", minutes, seconds)
+            timerLabel:SetText(formattedTime)
+        else
+            timerLabel:SetText("")
+            tombstoneData.timerTicker:Cancel()
+            tombstoneData.pin:Hide()
+            self.db.profile.tombstones[destGUID] = nil
+        end
+    end)
+end
+
+function DevilsaurTimers:CalculateDistanceToGraveyard(x, y)
+    local spiritHealerX, spiritHealerY = 0.802, 0.502
+
+    local map = C_Map.GetBestMapForUnit("player")
+    if not map then 
+        print("Error: Unable to get current map.")
+        return 0 
+    end
+
+    if not x or not y then
+        self:Print("Need both x and y positions from the player to calculate the distance to the graveyard.")
+    end
+
+    local _, worldPosition1 = C_Map.GetWorldPosFromMapPos(map, CreateVector2D(spiritHealerX, spiritHealerY))
+    local _, worldPosition2 = C_Map.GetWorldPosFromMapPos(map, CreateVector2D(x, y))
+
+    if not worldPosition1 or not worldPosition2 then
+        print("Error: Unable to convert map positions to world positions.")
+        return 0
+    end
+
+    local worldX1, worldY1 = worldPosition1:GetXY()
+    local worldX2, worldY2 = worldPosition2:GetXY()
+
+    local dx = worldX2 - worldX1
+    local dy = worldY2 - worldY1
+    return math.sqrt(dx * dx + dy * dy)
 end
 
 function DevilsaurTimers:DrawSquareAtPoint(centerX, centerY, radius, numSegments, color)

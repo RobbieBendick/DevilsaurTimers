@@ -14,9 +14,11 @@ local defaults = {
         hideBars = false,
         hideLines = false,
         hideMapTimers = false,
+        hideEnemyPlayerRespawnTimer = false,
         respawnTimer = 7 * 60,
         timers = {},
         previousTimers = {},
+        tombstones = {},
         parentProgressBarFramePosition = {},
         lineThickness = 4,
         mapTimerTextOffset = {
@@ -86,9 +88,20 @@ function DevilsaurTimers:CreateMenu()
                         get = function(info) return self.db.profile.hideMapTimers end,
                         set = function(info, value)
                             self.db.profile.hideMapTimers = value
-                            self:UpdateMapTimerTexts()
+                            self:UpdateMapDevilsaurTimerTexts()
                         end,
                     },
+                    hideEnemyPlayerRespawnTimer = {
+                        order = 4,
+                        type = "toggle",
+                        name = "Hide Player Respawn Timers",
+                        desc = "Hide the timer counting down the enemy player respawn timers.",
+                        get = function(info) return self.db.profile.hideEnemyPlayerRespawnTimer end,
+                        set = function(info, value)
+                            self.db.profile.hideEnemyPlayerRespawnTimer = value
+                            self:UpdateEnemyPlayerRespawnTimerVisibility()
+                        end,
+                    }
                 },
             },
             settings = {
@@ -306,6 +319,19 @@ function DevilsaurTimers:GetPlayerToggles()
     return toggles
 end
 
+function DevilsaurTimers:UpdateEnemyPlayerRespawnTimerVisibility()
+    for guid, tombstoneData in pairs(self.db.profile.tombstones) do
+        local pin = _G["TombstonePin" .. guid]
+        if pin then
+            if self.db.profile.hideEnemyPlayerRespawnTimer then
+                pin:Hide()
+            else
+                pin:Show()
+            end
+        end
+    end
+end
+
 function DevilsaurTimers:UpdateProgressBarSize()
     for i=1, 6 do
         local frame = _G["DevilsaurProgressBar"..i]
@@ -332,9 +358,8 @@ function DevilsaurTimers:UpdateProgressBarVisibility()
     parentFrame:SetShown(not self.db.profile.hideBars)
 end
 
-function DevilsaurTimers:UpdateMapTimerTexts()
+function DevilsaurTimers:UpdateMapDevilsaurTimerTexts()
     local action = self.db.profile.hideMapTimers and "Hide" or "Show"
-
     for _, color in ipairs(self.pathColors) do
         local frame = _G[color.."TimerText"]
         if frame and frame[action] then
@@ -357,9 +382,11 @@ function DevilsaurTimers:OnInitialize()
     self:CreateMenu()
     self:CreateProgressBars()
     self:RestoreProgressBarPosition()
+
     self:DrawPatrolPaths()
     self:UpdateProgressBarVisibility()
     self:RestoreTimers()
+    self:RestoreTombstones()
     
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "HandleCombatLog")
     self:RegisterEvent("UNIT_TARGET", "HandleUnitTarget")
